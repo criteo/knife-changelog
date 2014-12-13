@@ -13,6 +13,7 @@ class Chef
         super
         @tmp_prefix = 'knife-changelog'
         @berksfile = Berkshelf::Berksfile.from_options({})
+        @tmp_dirs = []
       end
 
       def run
@@ -26,7 +27,9 @@ class Chef
       end
 
       def clean
-        fail "Cleaning is not implemented yet"
+        @tmp_dirs.each do |dir|
+          FileUtils.rm_r dir
+        end
       end
 
       def ck_dep(name)
@@ -109,6 +112,7 @@ class Chef
 
       def shallow_clone(tmp_prefix, uri)
         dir = Dir.mktmpdir(tmp_prefix)
+        @tmp_dirs << dir
         clone = Mixlib::ShellOut.new("git clone --bare #{uri} bare-clone", :cwd => dir)
         clone.run_command
         ::File.join(dir, 'bare-clone')
