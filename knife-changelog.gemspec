@@ -20,4 +20,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake"
+
+  spec.add_dependency  'berkshelf'
+  spec.add_dependency  'mixlib-shellout'
+  spec.add_dependency  'chef',  '~> 11.16'
 end
