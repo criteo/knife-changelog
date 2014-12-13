@@ -7,20 +7,29 @@ class Chef
   class Knife
     class Changelog < Knife
 
-      def initialize
+      def initialize(options = {})
         @tmp_prefix = 'knife-changelog'
+        @berksfile = Berkshelf::Berksfile.from_options(options)
       end
 
-      def ck_location(name, options = {})
-        berksfile = Berkshelf::Berksfile.from_options(options)
-        berksfile.lockfile.find(name).location
+      def ck_dep(name)
+        @berksfile.lockfile.find(name)
       end
 
-      def execute(name,options= {})
-        loc =ck_location(name, options)
+      def ck_location(name)
+       ck_dep(name).location
+      end
+
+      def version_for(name)
+        # FIXME uses public methods instead
+        @berksfile.lockfile.graph.instance_variable_get(:@graph)[name].version
+      end
+
+      def execute(name)
+        loc = ck_location(name)
         changelog = case loc
                     when NilClass
-                      raise "Cannt handle default location yet"
+                      handle_source name, ck_dep(name)
                     when Berkshelf::GitLocation
                       handle_git loc
                     else
@@ -33,6 +42,24 @@ class Chef
         puts "--- Changelog ---"
         puts changelog
         puts "-----------------"
+      end
+
+      def handle_source(name, dep)
+        ck = noauth_rest.get_rest("https://supermarket.getchef.com/api/v1/cookbooks/#{name}")
+        url = ck['source_url'] || ck ['external_url']
+        case url
+        when nil
+          fail "No external url for #{name}, can't find any changelog source"
+        when /github.com\/(.*)(.git)?/
+          options = {
+            :github => $1,
+            :revision => 'v' + version_for(name), 
+          }
+          location = Berkshelf::GithubLocation.new dep, options
+          handle_git(location)
+        else
+          fail "External url #{url} points to unusable location!"
+        end
       end
 
       def handle_git(location)
