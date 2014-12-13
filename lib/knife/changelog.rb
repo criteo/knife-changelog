@@ -39,25 +39,28 @@ class Chef
         tmp_dir = shallow_clone(@tmp_prefix,location.uri)
 
         rev_parse = location.instance_variable_get(:@rev_parse)
+        cur_rev = location.revision.rstrip
         ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
         ls_tree.run_command
         changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
         if changelog
           puts "Found changelog file : " + $1
-          generate_from_changelog_file($1, location.revision.rstrip, rev_parse, tmp_dir)
+          generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
         else
-          generate_from_git_history(tmp_dir, location)
+          generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
         end
       end
 
       def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
-          diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} -- #{filename}", :cwd => tmp_dir)
-          diff.run_command
-          diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
+        diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} -- #{filename}", :cwd => tmp_dir)
+        diff.run_command
+        diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
       end
 
-      def generate_from_git_history(tmp_dir, location)
-        raise "changelog from git is not yet handled !"
+      def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
+        log = Mixlib::ShellOut.new("git log --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
+        log.run_command
+        log.stdout
       end
 
       def shallow_clone(tmp_prefix, uri)
