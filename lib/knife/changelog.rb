@@ -18,14 +18,21 @@ class Chef
 
       def execute(name,options= {})
         loc =ck_location(name, options)
-        case loc
-        when NilClass
-          raise "Cannt handle default location yet"
-        when Berkshelf::GitLocation
-          handle_git loc
-        else
-          raise "Cannot handle #{loc.class} yet"
-        end
+        changelog = case loc
+                    when NilClass
+                      raise "Cannt handle default location yet"
+                    when Berkshelf::GitLocation
+                      handle_git loc
+                    else
+                      raise "Cannot handle #{loc.class} yet"
+                    end
+        print_changelog(changelog)
+      end
+
+      def print_changelog(changelog)
+        puts "--- Changelog ---"
+        puts changelog
+        puts "-----------------"
       end
 
       def handle_git(location)
@@ -36,20 +43,20 @@ class Chef
         ls_tree.run_command
         changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
         if changelog
-          puts "found changelog file : " + $1
-          diff = Mixlib::ShellOut.new("git diff #{location.revision.rstrip}..#{rev_parse} -- #{$1}", :cwd => tmp_dir)
-          puts diff.command
-          diff.run_command
-          puts "--- Changelog ---"
-          puts diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
-          puts "-----------------"
+          puts "Found changelog file : " + $1
+          generate_from_changelog_file($1, location.revision.rstrip, rev_parse, tmp_dir)
         else
-          generate_git_history(tmp_dir, location)
+          generate_from_git_history(tmp_dir, location)
         end
-        
       end
 
-      def generate_git_history(tmp_dir, location)
+      def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
+          diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} -- #{filename}", :cwd => tmp_dir)
+          diff.run_command
+          diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
+      end
+
+      def generate_from_git_history(tmp_dir, location)
         raise "changelog from git is not yet handled !"
       end
 
