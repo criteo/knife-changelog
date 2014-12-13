@@ -7,9 +7,26 @@ class Chef
   class Knife
     class Changelog < Knife
 
-      def initialize(options = {})
+      banner 'knife changelog COOKBOOK [COOKBOOK ...]'
+
+      def initialize(options)
+        super
         @tmp_prefix = 'knife-changelog'
-        @berksfile = Berkshelf::Berksfile.from_options(options)
+        @berksfile = Berkshelf::Berksfile.from_options({})
+      end
+
+      def run
+        begin
+          @name_args.each do |cookbook|
+            execute cookbook
+          end
+        ensure
+          clean
+        end
+      end
+
+      def clean
+        fail "Cleaning is not implemented yet"
       end
 
       def ck_dep(name)
