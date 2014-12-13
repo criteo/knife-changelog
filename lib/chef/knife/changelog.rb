@@ -55,11 +55,11 @@ class Chef
                     else
                       raise "Cannot handle #{loc.class} yet"
                     end
-        print_changelog(changelog)
+        print_changelog(name, changelog)
       end
 
-      def print_changelog(changelog)
-        puts "--- Changelog ---"
+      def print_changelog(name, changelog)
+        puts "--- Changelog for #{name} ---"
         puts changelog
         puts "-----------------"
       end
