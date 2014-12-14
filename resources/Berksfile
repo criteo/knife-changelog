@@ -1,0 +1,4 @@
+source "https://supermarket.chef.io"
+
+cookbook 'ohai'
+cookbook 'ulimit', :github => 'bmhatfield/chef-ulimit'

@@ -1,0 +1,9 @@
+DEPENDENCIES
+  ohai
+  ulimit
+    git: git://github.com/bmhatfield/chef-ulimit.git
+    revision: c8bb9a486b9bfb7d91e51141e6352ea3703a1819 
+
+GRAPH
+  ohai (1.1.10)
+  ulimit (0.1.4)
