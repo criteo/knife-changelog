@@ -6,6 +6,7 @@ require 'knife/changelog/version'
 Gem::Specification.new do |spec|
   spec.name          = "knife-changelog"
   spec.version       = Knife::Changelog::VERSION
+  spec.version       = "#{spec.version}-alpha-#{ENV['TRAVIS_BUILD_NUMBER']}" if ENV['TRAVIS']
   spec.authors       = ["Gregoire Seux"]
   spec.email         = ["kamaradclimber@gmail.com"]
   spec.summary       = %q{Facilitate access to cookbooks changelog}
@@ -20,6 +21,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake"
+  spec.add_development_dependency "rspec"
+
 
   spec.add_dependency  'berkshelf'
   spec.add_dependency  'mixlib-shellout'
