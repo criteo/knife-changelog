@@ -118,15 +118,18 @@ class Chef
       end
 
       def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
-        log = Mixlib::ShellOut.new("git log --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
+        log = Mixlib::ShellOut.new("git log --no-merges --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
         log.run_command
         c = log.stdout
-        if config[:linkify] and (n = short(location))
-          c = c.lines.map do |line|
-            n + '@' + line
-          end
-        end
+        n = short(location)
+        c = linkify(n, c) if config[:linkify] and n
         c
+      end
+
+      def linkify(name, changelog)
+        changelog = changelog.lines.map { |line|
+          name + '@' + line # linfiky commits
+        }
       end
 
       def short(location)
