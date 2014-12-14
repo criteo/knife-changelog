@@ -16,6 +16,17 @@ class Chef
         @tmp_dirs = []
       end
 
+      option :linkify,
+        :short => '-l',
+        :long  => '--linkify',
+        :description => 'add markdown links where relevant',
+        :boolean => true
+
+      option :ignore_changelog_file,
+        :long => '--ignore-changelog-file',
+        :description => "Ignore changelog file presence, use git history instead",
+        :boolean => true
+
       def run
         begin
           @name_args.each do |cookbook|
@@ -59,9 +70,11 @@ class Chef
       end
 
       def print_changelog(name, changelog)
-        puts "--- Changelog for #{name} ---"
-        puts changelog
-        puts "-----------------"
+        unless changelog.empty?
+          puts "--- Changelog for #{name} ---"
+          puts changelog
+          puts "-----------------"
+        end
       end
 
       def handle_source(name, dep)
@@ -90,7 +103,7 @@ class Chef
         ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
         ls_tree.run_command
         changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
-        if changelog
+        if changelog and not config[:ignore_changelog_file]
           puts "Found changelog file : " + $1
           generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
         else
@@ -107,7 +120,19 @@ class Chef
       def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
         log = Mixlib::ShellOut.new("git log --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
         log.run_command
-        log.stdout
+        c = log.stdout
+        if config[:linkify] and (n = short(location))
+          c = c.lines.map do |line|
+            n + '@' + line
+          end
+        end
+        c
+      end
+
+      def short(location)
+        if location.uri =~ /([\w-]+)\/([\w-]+)(\.git)?$/
+          "%s/%s" % [$1,$2]
+        end
       end
 
       def shallow_clone(tmp_prefix, uri)
