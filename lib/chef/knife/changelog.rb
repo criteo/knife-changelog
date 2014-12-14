@@ -121,15 +121,23 @@ class Chef
         log = Mixlib::ShellOut.new("git log --no-merges --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
         log.run_command
         c = log.stdout
-        n = short(location)
+        n = https_url(location)
         c = linkify(n, c) if config[:linkify] and n
         c
       end
 
-      def linkify(name, changelog)
+      def linkify(url, changelog)
         changelog = changelog.lines.map { |line|
-          name + '@' + line # linfiky commits
+          line.gsub(/^([a-f0-9]+) /, '[%s/commit/\1](\1) ' % [url])
         }
+      end
+
+      def https_url(location)
+        if location.uri =~ /^\w+:\/\/(.*@)?(.*)(\.git?)/
+          "https://%s" % [ $2 ]
+        else
+          fail "Cannot guess http url from git remote url"
+        end
       end
 
       def short(location)
