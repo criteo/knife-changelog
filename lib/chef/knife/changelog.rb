@@ -29,7 +29,12 @@ class Chef
 
       def run
         begin
-          @name_args.each do |cookbook|
+          if @name_args.empty?
+            cks = @berksfile.cookbooks.collect {|c| c.name }
+          else
+            cks = @name_args
+          end
+          cks.each do |cookbook|
             execute cookbook
           end
         ensure
