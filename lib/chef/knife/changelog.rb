@@ -69,6 +69,9 @@ class Chef
                       handle_source name, ck_dep(name)
                     when Berkshelf::GitLocation
                       handle_git loc
+                    when Berkshelf::PathLocation
+                      Log.debug "path location are always at the last version"
+                      ""
                     else
                       raise "Cannot handle #{loc.class} yet"
                     end
