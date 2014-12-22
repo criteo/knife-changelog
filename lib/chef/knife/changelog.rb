@@ -91,7 +91,8 @@ class Chef
         url = ck['source_url'] || ck ['external_url']
         case url.strip
         when nil,""
-          fail "No external url for #{name}, can't find any changelog source"
+          Log.warn "No external url for #{name}, can't find any changelog source"
+          ""
         when /github.com\/(.*)(.git)?/
           options = {
             :github => $1,
@@ -113,7 +114,7 @@ class Chef
         ls_tree.run_command
         changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
         if changelog and not config[:ignore_changelog_file]
-          puts "Found changelog file : " + $1
+          Log.info "Found changelog file : " + $1
           generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
         else
           generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
