@@ -80,9 +80,9 @@ class Chef
 
       def print_changelog(name, changelog)
         unless changelog.empty?
-          puts "--- Changelog for #{name} ---"
+          puts "###  Changelog for #{name}"
           puts changelog
-          puts "-----------------"
+          puts "\n\n"
         end
       end
 
