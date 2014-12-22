@@ -30,11 +30,12 @@ class Chef
       def run
         begin
           if @name_args.empty?
-            cks = @berksfile.cookbooks.collect {|c| c.name }
+            cks = @berksfile.cookbooks.collect {|c| c.cookbook_name }
           else
             cks = @name_args
           end
           cks.each do |cookbook|
+            Log.debug "Checking changelog for #{cookbook}"
             execute cookbook
           end
         ensure
