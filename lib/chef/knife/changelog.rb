@@ -144,9 +144,14 @@ class Chef
       end
 
       def linkify(url, changelog)
-        changelog.map { |line|
-          line.gsub(/^([a-f0-9]+) /, '[%s/commit/\1](\1) ' % [url])
-        }
+        changelog.map do |line|
+          case url
+          when /gitlab[\w\.-]+\/([\w-]+\/[\w-]+)(\.git)?/
+            line.gsub(/^([a-f0-9]+) /, '%s@\1 ' % [$1])
+          else
+            line.gsub(/^([a-f0-9]+) /, '[\1](%s/commit/\1) ' % [url])
+          end
+        end
       end
 
       def https_url(location)
