@@ -22,6 +22,12 @@ class Chef
         :description => 'add markdown links where relevant',
         :boolean => true
 
+      option :markdown,
+        :short => '-m',
+        :long  => '--markdown',
+        :description => 'use markdown syntax',
+        :boolean => true
+
       option :ignore_changelog_file,
         :long => '--ignore-changelog-file',
         :description => "Ignore changelog file presence, use git history instead",
@@ -130,14 +136,15 @@ class Chef
       def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
         log = Mixlib::ShellOut.new("git log --no-merges --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
         log.run_command
-        c = log.stdout
+        c = log.stdout.lines
         n = https_url(location)
         c = linkify(n, c) if config[:linkify] and n
+        c = c.map { |line| "* " + line } if config[:markdown]
         c
       end
 
       def linkify(url, changelog)
-        changelog = changelog.lines.map { |line|
+        changelog.map { |line|
           line.gsub(/^([a-f0-9]+) /, '[%s/commit/\1](\1) ' % [url])
         }
       end
