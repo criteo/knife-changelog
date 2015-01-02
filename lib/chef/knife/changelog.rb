@@ -102,7 +102,7 @@ class Chef
         when /github.com\/(.*)(.git)?/
           options = {
             :github => $1,
-            :revision => 'v' + version_for(name),
+            :revision => version_for(name),
           }
           location = Berkshelf::GithubLocation.new dep, options
           handle_git(location)
@@ -111,11 +111,28 @@ class Chef
         end
       end
 
+      def revision_exists?(dir, revision)
+        Log.debug "Testing existence of #{revision}"
+        revlist = Mixlib::ShellOut.new("git rev-list --quiet #{revision}", :cwd => dir)
+        revlist.run_command
+        not revlist.error?
+      end
+
+      def detect_cur_revision(dir, rev)
+        unless revision_exists?(dir, rev)
+          prefixed_rev = 'v' + rev
+          return prefixed_rev if revision_exists?(dir, prefixed_rev)
+          fail "#{rev} is not a valid revision"
+        end
+        rev
+      end
+
       def handle_git(location)
         tmp_dir = shallow_clone(@tmp_prefix,location.uri)
 
         rev_parse = location.instance_variable_get(:@rev_parse)
         cur_rev = location.revision.rstrip
+        cur_rev = detect_cur_revision(tmp_dir, cur_rev)
         ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
         ls_tree.run_command
         changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
