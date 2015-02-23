@@ -33,16 +33,26 @@ class Chef
         :description => "Ignore changelog file presence, use git history instead",
         :boolean => true
 
+      option :submodules,
+        :long => '--submodules SUBMODULE[,SUBMODULE]',
+        :description => 'Submoduless to check for changes as well (comma separated)'
+
+
       def run
         begin
+          Log.info config
           if @name_args.empty?
             cks = @berksfile.cookbooks.collect {|c| c.cookbook_name }
           else
             cks = @name_args
           end
           cks.each do |cookbook|
-            Log.debug "Checking changelog for #{cookbook}"
+            Log.debug "Checking changelog for #{cookbook} (cookbook)"
             execute cookbook
+          end
+          (config[:submodules] || '').split(',').each do |submodule|
+            Log.debug "Checking changelog for #{submodule} (submodule)"
+            execute(submodule, true)
           end
         ensure
           clean
@@ -68,18 +78,22 @@ class Chef
         @berksfile.lockfile.graph.instance_variable_get(:@graph)[name].version
       end
 
-      def execute(name)
-        loc = ck_location(name)
-        changelog = case loc
-                    when NilClass
-                      handle_source name, ck_dep(name)
-                    when Berkshelf::GitLocation
-                      handle_git loc
-                    when Berkshelf::PathLocation
-                      Log.debug "path location are always at the last version"
-                      ""
+      def execute(name, submodule=false)
+        changelog = if submodule
+                      handle_submodule(name)
                     else
-                      raise "Cannot handle #{loc.class} yet"
+                      loc = ck_location(name)
+                      case loc
+                      when NilClass
+                        handle_source name, ck_dep(name)
+                      when Berkshelf::GitLocation
+                        handle_git loc
+                      when Berkshelf::PathLocation
+                        Log.debug "path location are always at the last version"
+                        ""
+                      else
+                        raise "Cannot handle #{loc.class} yet"
+                      end
                     end
         print_changelog(name, changelog)
       end
@@ -125,6 +139,19 @@ class Chef
           fail "#{rev} is not a valid revision"
         end
         rev
+      end
+
+      def handle_submodule(name)
+        subm_url = Mixlib::ShellOut.new("git config --list| grep ^submodule | grep ^submodule.#{name}.url")
+        subm_url.run_command
+        subm_url.error!
+        url = subm_url.stdout.lines.first.split('=')[1].chomp
+        subm_revision = Mixlib::ShellOut.new("git submodule status #{name}")
+        subm_revision.run_command
+        subm_revision.error!
+        revision = subm_revision.stdout.strip.split(' ').first
+        loc = Berkshelf::Location.init(nil, {git: url,revision: revision})
+        handle_git(loc)
       end
 
       def handle_git(location)
