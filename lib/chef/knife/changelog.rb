@@ -109,13 +109,14 @@ class Chef
       def handle_source(name, dep)
         ck = noauth_rest.get_rest("https://supermarket.getchef.com/api/v1/cookbooks/#{name}")
         url = ck['source_url'] || ck ['external_url']
+        Chef::Log.debug("Using #{url} as source url")
         case url.strip
         when nil,""
           Log.warn "No external url for #{name}, can't find any changelog source"
           ""
         when /github.com\/(.*)(.git)?/
           options = {
-            :github => $1,
+            :github => $1.chomp('/'),
             :revision => version_for(name),
           }
           location = Berkshelf::GithubLocation.new dep, options
