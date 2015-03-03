@@ -115,11 +115,12 @@ class Chef
           Log.warn "No external url for #{name}, can't find any changelog source"
           ""
         when /github.com\/(.*)(.git)?/
+          url = "https://github.com/#{$1.chomp('/')}.git"
           options = {
-            :github => $1.chomp('/'),
+            :git => url,
             :revision => version_for(name),
           }
-          location = Berkshelf::GithubLocation.new dep, options
+          location = Berkshelf::GitLocation.new dep, options
           handle_git(location)
         else
           fail "External url #{url} points to unusable location!"
