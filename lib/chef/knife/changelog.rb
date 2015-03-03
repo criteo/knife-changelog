@@ -212,6 +212,7 @@ class Chef
         @tmp_dirs << dir
         clone = Mixlib::ShellOut.new("git clone --bare #{uri} bare-clone", :cwd => dir)
         clone.run_command
+        clone.error!
         ::File.join(dir, 'bare-clone')
       end
 
