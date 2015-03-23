@@ -13,7 +13,7 @@ class Chef
       def initialize(options)
         super
         berksfile = Berkshelf::Berksfile.from_options({})
-        @changelog = KnifeChangelog::Changelog.new(berksfile, config)
+        @changelog = KnifeChangelog::Changelog.new(berksfile.lockfile.locks, config)
       end
 
       option :linkify,

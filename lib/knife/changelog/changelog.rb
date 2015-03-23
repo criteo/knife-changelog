@@ -5,9 +5,9 @@ require 'json'
 
 class KnifeChangelog
   class Changelog
-    def initialize(berksfile, config = {})
+    def initialize(locked_versions, config = {})
       @tmp_prefix = 'knife-changelog'
-      @berksfile = berksfile
+      @locked_versions = locked_versions
       @config   = config
       @tmp_dirs = []
     end
@@ -15,7 +15,7 @@ class KnifeChangelog
     def run(cookbooks)
       begin
         if cookbooks.empty?
-          cks = @berksfile.cookbooks.collect {|c| c.cookbook_name }
+          cks = locked_versions.keys
         else
           cks = cookbooks
         end
@@ -39,16 +39,15 @@ class KnifeChangelog
     end
 
     def ck_dep(name)
-      @berksfile.lockfile.locks[name]
+      @locked_versions[name]
     end
 
     def ck_location(name)
       ck_dep(name).location
     end
 
-    def version_for(name)
-      # FIXME uses public methods instead
-      @berksfile.lockfile.graph.instance_variable_get(:@graph)[name].version
+    def guess_version_for(name)
+      @locked_versions[name].locked_version.to_s
     end
 
     def execute(name, submodule=false)
@@ -91,7 +90,7 @@ class KnifeChangelog
         url = "https://github.com/#{$1.chomp('/')}.git"
         options = {
           :git => url,
-          :revision => version_for(name),
+          :revision => guess_version_for(name),
         }
         location = Berkshelf::GitLocation.new dep, options
         handle_git(location)
