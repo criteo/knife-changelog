@@ -1,4 +1,7 @@
 require 'chef/log'
+require 'chef/knife'
+require 'rest-client'
+require 'json'
 
 class KnifeChangelog
   class Changelog
@@ -77,7 +80,7 @@ class KnifeChangelog
     end
 
     def handle_source(name, dep)
-      ck = noauth_rest.get_rest("https://supermarket.getchef.com/api/v1/cookbooks/#{name}")
+      ck = JSON.parse(RestClient.get "https://supermarket.getchef.com/api/v1/cookbooks/#{name}")
       url = ck['source_url'] || ck ['external_url']
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
