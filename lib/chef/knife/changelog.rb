@@ -40,7 +40,8 @@ class Chef
 
       def run
         Log.info config
-        @changelog.run(@name_args)
+        changelog = @changelog.run(@name_args)
+        puts changelog
       end
     end
 

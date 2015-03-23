@@ -13,23 +13,25 @@ class KnifeChangelog
     end
 
     def run(cookbooks)
+      changelog = []
       begin
         if cookbooks.empty?
-          cks = locked_versions.keys
+          cks = @locked_versions.keys
         else
           cks = cookbooks
         end
-        cks.each do |cookbook|
+        changelog += cks.map do |cookbook|
           Chef::Log.debug "Checking changelog for #{cookbook} (cookbook)"
           execute cookbook
         end
-        (@config[:submodules] || '').split(',').each do |submodule|
+        changelog += (@config[:submodules] || '').split(',').map do |submodule|
           Chef::Log.debug "Checking changelog for #{submodule} (submodule)"
           execute(submodule, true)
         end
       ensure
         clean
       end
+      changelog.compact.join("\n")
     end
 
     def clean
@@ -67,14 +69,18 @@ class KnifeChangelog
                       raise "Cannot handle #{loc.class} yet"
                     end
                   end
-      print_changelog(name, changelog)
+      format_changelog(name, changelog)
     end
 
-    def print_changelog(name, changelog)
-      unless changelog.empty?
-        puts "###  Changelog for #{name}"
-        puts changelog
-        puts "\n\n"
+    def format_changelog(name, changelog)
+      if changelog.empty?
+        nil
+      else
+        [
+          "###  Changelog for #{name}",
+          changelog,
+          "\n"
+        ].join("\n")
       end
     end
 
