@@ -39,7 +39,7 @@ class KnifeChangelog
     end
 
     def ck_dep(name)
-      @berksfile.lockfile.find(name)
+      @berksfile.lockfile.locks[name]
     end
 
     def ck_location(name)
