@@ -132,6 +132,7 @@ class KnifeChangelog
       subm_revision.run_command
       subm_revision.error!
       revision = subm_revision.stdout.strip.split(' ').first
+      revision.gsub!(/^\+/, '')
       loc = Berkshelf::Location.init(nil, {git: url,revision: revision})
       handle_git(name, loc)
     end
