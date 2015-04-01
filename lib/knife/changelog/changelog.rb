@@ -24,7 +24,9 @@ class KnifeChangelog
           Chef::Log.debug "Checking changelog for #{cookbook} (cookbook)"
           execute cookbook
         end
-        changelog += (@config[:submodules] || '').split(',').map do |submodule|
+        subs = @config[:submodules] || []
+        subs = subs.split(',') if subs.is_a? String
+        changelog += subs.map do |submodule|
           Chef::Log.debug "Checking changelog for #{submodule} (submodule)"
           execute(submodule, true)
         end
