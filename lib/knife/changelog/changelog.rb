@@ -63,7 +63,7 @@ class KnifeChangelog
                     when NilClass
                       handle_source name, ck_dep(name)
                     when Berkshelf::GitLocation
-                      handle_git loc
+                      handle_git name, loc
                     when Berkshelf::PathLocation
                       Chef::Log.debug "path location are always at the last version"
                       ""
@@ -101,7 +101,7 @@ class KnifeChangelog
           :revision => guess_version_for(name),
         }
         location = Berkshelf::GitLocation.new dep, options
-        handle_git(location)
+        handle_git(name, location)
       else
         fail "External url #{url} points to unusable location!"
       end
@@ -114,11 +114,11 @@ class KnifeChangelog
       not revlist.error?
     end
 
-    def detect_cur_revision(dir, rev)
+    def detect_cur_revision(name, dir, rev)
       unless revision_exists?(dir, rev)
         prefixed_rev = 'v' + rev
         return prefixed_rev if revision_exists?(dir, prefixed_rev)
-        fail "#{rev} is not a valid revision"
+        fail "#{rev} is not a valid revision (#{name})"
       end
       rev
     end
@@ -133,15 +133,15 @@ class KnifeChangelog
       subm_revision.error!
       revision = subm_revision.stdout.strip.split(' ').first
       loc = Berkshelf::Location.init(nil, {git: url,revision: revision})
-      handle_git(loc)
+      handle_git(name, loc)
     end
 
-    def handle_git(location)
+    def handle_git(name, location)
       tmp_dir = shallow_clone(@tmp_prefix,location.uri)
 
       rev_parse = location.instance_variable_get(:@rev_parse)
       cur_rev = location.revision.rstrip
-      cur_rev = detect_cur_revision(tmp_dir, cur_rev)
+      cur_rev = detect_cur_revision(name, tmp_dir, cur_rev)
       ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
       ls_tree.run_command
       changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
