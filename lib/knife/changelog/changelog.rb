@@ -15,7 +15,7 @@ class KnifeChangelog
     def run(cookbooks)
       changelog = []
       begin
-        if cookbooks.empty?
+        if cookbooks.empty? and @config[:allow_update_all]
           cks = @locked_versions.keys
         else
           cks = cookbooks

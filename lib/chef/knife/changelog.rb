@@ -33,6 +33,12 @@ class Chef
         :description => "Ignore changelog file presence, use git history instead",
         :boolean => true
 
+      option :allow_update_all,
+        :long => '--allow-update-all',
+        :description => "If no cookbook given, check all Berksfile",
+        :boolean => true,
+        :default => true
+
       option :submodules,
         :long => '--submodules SUBMODULE[,SUBMODULE]',
         :description => 'Submoduless to check for changes as well (comma separated)'
