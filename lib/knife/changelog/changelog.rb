@@ -79,7 +79,8 @@ class KnifeChangelog
         nil
       else
         [
-          "###  Changelog for #{name}",
+          "Changelog for #{name}",
+          "==============#{'=' * name.size}"
           changelog,
           "\n"
         ].join("\n")
