@@ -47,7 +47,12 @@ class KnifeChangelog
     end
 
     def ck_location(name)
-      ck_dep(name).location
+      begin
+        ck_dep(name).location
+      rescue
+        puts "Failed to get location for cookbook: #{name}"
+        raise
+      end
     end
 
     def guess_version_for(name)
