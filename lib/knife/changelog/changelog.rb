@@ -85,7 +85,7 @@ class KnifeChangelog
       else
         [
           "Changelog for #{name}",
-          "==============#{'=' * name.size}"
+          "==============#{'=' * name.size}",
           changelog,
           "\n"
         ].join("\n")
