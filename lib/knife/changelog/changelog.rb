@@ -86,8 +86,7 @@ class KnifeChangelog
         [
           "Changelog for #{name}",
           "==============#{'=' * name.size}",
-          changelog,
-          "\n"
+          changelog.join,
         ].join("\n")
       end
     end
