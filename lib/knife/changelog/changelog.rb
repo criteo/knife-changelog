@@ -2,14 +2,19 @@ require 'chef/log'
 require 'chef/knife'
 require 'rest-client'
 require 'json'
+require 'berkshelf'
 
 class KnifeChangelog
   class Changelog
-    def initialize(locked_versions, config = {})
+    def initialize(locked_versions, config = {}, sources=[])
       @tmp_prefix = 'knife-changelog'
       @locked_versions = locked_versions
       @config   = config
       @tmp_dirs = []
+      @sources = sources
+      if sources.empty? # preserve api compat
+        @sources = [ Berkshelf::Source.new("https://supermarket.chef.io") ]
+      end
     end
 
     def run(cookbooks)
@@ -91,14 +96,33 @@ class KnifeChangelog
       end
     end
 
+    def get_from_supermarket_sources(name)
+      urls = @sources.map { |s|
+        begin
+          RestClient.get "#{s.uri}/api/v1/cookbooks/#{name}"
+        rescue
+          nil
+        end
+      }.compact.map do |json|
+        ck = JSON.parse(json)
+        ck['source_url'] || ck ['external_url']
+      end.uniq
+      case urls.size
+      when 0
+        Chef::Log.warn "No external url for #{name}"
+        raise "Canot find any changelog source for #{name}"
+      when 1
+        urls.first
+      else
+        Chef::Log.warn "#{name} has different urls on various sources ??"
+        raise "Cannot decide which source to choose for #{name}"
+      end
+    end
+
     def handle_source(name, dep)
-      ck = JSON.parse(RestClient.get "https://supermarket.getchef.com/api/v1/cookbooks/#{name}")
-      url = ck['source_url'] || ck ['external_url']
+      url = get_from_supermarket_sources(name)
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
-      when nil,""
-        Chef::Log.warn "No external url for #{name}, can't find any changelog source"
-        ""
       when /github.com\/(.*)(.git)?/
         url = "https://github.com/#{$1.chomp('/')}.git"
         options = {
