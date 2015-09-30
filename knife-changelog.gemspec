@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["kamaradclimber@gmail.com"]
   spec.summary       = %q{Facilitate access to cookbooks changelog}
   spec.description   = %q{}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/kamaradclimber/knife-changelog"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
