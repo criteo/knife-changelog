@@ -209,7 +209,7 @@ class KnifeChangelog
       if location.uri =~ /^\w+:\/\/(.*@)?(.*)(\.git?)/
         "https://%s" % [ $2 ]
       else
-        fail "Cannot guess http url from git remote url"
+        fail "Cannot guess http url from git remote url: #{location.uri}"
       end
     end
 
