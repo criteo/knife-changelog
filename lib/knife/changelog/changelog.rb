@@ -64,9 +64,16 @@ class KnifeChangelog
       @locked_versions[name].locked_version.to_s
     end
 
+    def handle_new_cookbook(name)
+      stars = '**' if @config[:markdown]
+      ["#{stars}Cookbook was not in the berksfile#{stars}"]
+    end
+
     def execute(name, submodule=false)
       changelog = if submodule
                     handle_submodule(name)
+                  elsif ck_dep(name).nil?
+                    handle_new_cookbook(name)
                   else
                     loc = ck_location(name)
                     case loc
