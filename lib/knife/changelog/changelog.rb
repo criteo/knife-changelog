@@ -181,13 +181,12 @@ class KnifeChangelog
       cur_rev = detect_cur_revision(name, tmp_dir, cur_rev)
       ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
       ls_tree.run_command
-      changelog = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
-      if changelog and not @config[:ignore_changelog_file]
-        Chef::Log.info "Found changelog file : " + $1
-        generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
-      else
-        generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
-      end
+      changelog_file = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
+      changelog = if changelog_file and !@config[:ignore_changelog_file]
+                    Chef::Log.info "Found changelog file : " + $1
+                    generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
+                  end
+      changelog || generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
     end
 
     def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
