@@ -192,7 +192,8 @@ class KnifeChangelog
     def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
       diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} -- #{filename}", :cwd => tmp_dir)
       diff.run_command
-      diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
+      ch = diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
+      ch.empty? ? nil : ch
     end
 
     def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
