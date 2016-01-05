@@ -190,9 +190,14 @@ class KnifeChangelog
     end
 
     def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
-      diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} -- #{filename}", :cwd => tmp_dir)
+      diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} --word-diff -- #{filename}", :cwd => tmp_dir)
       diff.run_command
-      ch = diff.stdout.lines.collect {|line| $1 if line =~ /^\+([^+].*)/}.compact
+      ch = diff.
+        stdout.
+        lines.
+        collect {|line| $1.strip if line =~ /^{\+(.*)\+}$/}.compact.
+        map { |line| line.gsub(/^#+(.*)$/, "\\1\n---")}. # replace section by smaller header
+        select { |line| !(line =~ /^===+/)}.compact # remove header lines
       ch.empty? ? nil : ch
     end
 
