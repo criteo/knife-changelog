@@ -99,6 +99,7 @@ class KnifeChangelog
           "Changelog for #{name}",
           "==============#{'=' * name.size}",
           changelog,
+          ''
         ].compact.join("\n")
       end
     end
