@@ -98,8 +98,8 @@ class KnifeChangelog
         [
           "Changelog for #{name}",
           "==============#{'=' * name.size}",
-          changelog.join,
-        ].join("\n")
+          changelog,
+        ].compact.join("\n")
       end
     end
 
@@ -203,6 +203,7 @@ class KnifeChangelog
       n = https_url(location)
       c = linkify(n, c) if @config[:linkify] and n
       c = c.map { |line| "* " + line } if @config[:markdown]
+      c = c.map { |line| line.strip } # clean end of line
       c
     end
 
