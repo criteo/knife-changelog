@@ -1,5 +1,5 @@
 module Knife
   module Changelog
-    VERSION = "0.5.7"
+    VERSION = "0.5.8"
   end
 end
