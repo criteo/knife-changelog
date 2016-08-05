@@ -131,8 +131,8 @@ class KnifeChangelog
       url = get_from_supermarket_sources(name)
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
-      when /github.com\/(.*)(.git)?/
-        url = "https://github.com/#{$1.chomp('/')}.git"
+      when /(gitlab|github).com\/(.*)(.git)?/
+        url = "https://#{$1}.com/#{$2.chomp('/')}.git"
         options = {
           :git => url,
           :revision => guess_version_for(name),
