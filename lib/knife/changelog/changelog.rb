@@ -107,7 +107,11 @@ class KnifeChangelog
     def get_from_supermarket_sources(name)
       urls = @sources.map { |s|
         begin
-          RestClient.get "#{s.uri}/api/v1/cookbooks/#{name}"
+          RestClient::Request.execute(
+            url: "#{s.uri}/api/v1/cookbooks/#{name}",
+            method: :get,
+            verify_ssl: false # TODO make this configurable
+          )
         rescue
           nil
         end
@@ -131,7 +135,7 @@ class KnifeChangelog
       url = get_from_supermarket_sources(name)
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
-      when /(gitlab|github).com\/(.*)(.git)?/
+      when /(gitlab.*|github).com\/(.*)(.git)?/
         url = "https://#{$1}.com/#{$2.chomp('/')}.git"
         options = {
           :git => url,
