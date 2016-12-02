@@ -144,7 +144,7 @@ class KnifeChangelog
         location = Berkshelf::GitLocation.new dep, options
         handle_git(name, location)
       else
-        fail "External url #{url} points to unusable location!"
+        fail "External url #{url} points to unusable location! (cookbook: #{name})"
       end
     end
 
