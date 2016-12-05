@@ -133,6 +133,7 @@ class KnifeChangelog
 
     def handle_source(name, dep)
       url = get_from_supermarket_sources(name)
+      raise "No source found in supermarket for cookbook '#{name}'" unless url
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
       when /(gitlab.*|github).com\/(.*)(.git)?/
