@@ -127,6 +127,9 @@ class KnifeChangelog
         urls.first
       else
         Chef::Log.warn "#{name} has different urls on various sources ??"
+        urls.each do |url|
+          Chef::Log.warn "- #{url}"
+        end
         raise "Cannot decide which source to choose for #{name}"
       end
     end
