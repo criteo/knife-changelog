@@ -105,7 +105,7 @@ class KnifeChangelog
     end
 
     def get_from_supermarket_sources(name)
-      urls = @sources.map { |s|
+      @sources.map do |s|
         begin
           RestClient::Request.execute(
             url: "#{s.uri}/api/v1/cookbooks/#{name}",
@@ -115,23 +115,15 @@ class KnifeChangelog
         rescue
           nil
         end
-      }.compact.map do |json|
-        ck = JSON.parse(json)
-        ck['source_url'] || ck ['external_url']
-      end.uniq
-      case urls.size
-      when 0
-        Chef::Log.warn "No external url for #{name}"
-        raise "Canot find any changelog source for #{name}"
-      when 1
-        urls.first
-      else
-        Chef::Log.warn "#{name} has different urls on various sources ??"
-        urls.each do |url|
-          Chef::Log.warn "- #{url}"
-        end
-        raise "Cannot decide which source to choose for #{name}"
       end
+        .compact
+        .map { |json| JSON.parse(json) }
+        .sort_by { |ck| Gem::Version.new(ck['latest_version'].split('/').last) }
+        .map { |ck| ck['source_url'] || ck ['external_url'] }
+        .last
+        .tap do |source|
+          raise "Canot find any changelog source for #{name}" unless source
+        end
     end
 
     def handle_source(name, dep)
