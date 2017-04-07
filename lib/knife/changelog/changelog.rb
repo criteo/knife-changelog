@@ -215,7 +215,7 @@ class KnifeChangelog
 
     def linkify(url, changelog)
       changelog.map do |line|
-        line.gsub(/^([a-f0-9]+) /, '[\1](%s/commit/\1) ' % [url.chomp('.git')])
+        line.gsub(/^([a-f0-9]+) (.*)$/, '\2 (%s/commit/\1) ' % [url.chomp('.git')])
       end
     end
 
