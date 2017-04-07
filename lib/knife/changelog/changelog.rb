@@ -70,37 +70,36 @@ class KnifeChangelog
     end
 
     def execute(name, submodule=false)
-      changelog = if submodule
-                    handle_submodule(name)
-                  elsif ck_dep(name).nil?
-                    handle_new_cookbook(name)
-                  else
-                    loc = ck_location(name)
-                    case loc
-                    when NilClass
-                      handle_source name, ck_dep(name)
-                    when Berkshelf::GitLocation
-                      handle_git name, loc
-                    when Berkshelf::PathLocation
-                      Chef::Log.debug "path location are always at the last version"
-                      ""
-                    else
-                      raise "Cannot handle #{loc.class} yet"
-                    end
-                  end
-      format_changelog(name, changelog)
+      version_change, changelog = if submodule
+                                    handle_submodule(name)
+                                  elsif ck_dep(name).nil?
+                                    handle_new_cookbook(name)
+                                  else
+                                    loc = ck_location(name)
+                                    case loc
+                                    when NilClass
+                                      handle_source name, ck_dep(name)
+                                    when Berkshelf::GitLocation
+                                      handle_git name, loc
+                                    when Berkshelf::PathLocation
+                                      Chef::Log.debug "path location are always at the last version"
+                                      ["", ""]
+                                    else
+                                      raise "Cannot handle #{loc.class} yet"
+                                    end
+                                  end
+      format_changelog(name, version_change, changelog)
     end
 
-    def format_changelog(name, changelog)
+    def format_changelog(name, version_change, changelog)
       if changelog.empty?
         nil
       else
-        [
-          "Changelog for #{name}",
-          "==============#{'=' * name.size}",
-          changelog,
-          ''
-        ].compact.join("\n")
+        full = ["Changelog for #{name}: #{version_change}"]
+        full << '=' * full.first.size
+        full << changelog
+        full << ''
+        full.compact.join("\n")
       end
     end
 
@@ -187,7 +186,8 @@ class KnifeChangelog
                     Chef::Log.info "Found changelog file : " + $1
                     generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
                   end
-      changelog || generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
+      changelog ||= generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
+      [ "#{cur_rev}->#{rev_parse}", changelog ]
     end
 
     def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
