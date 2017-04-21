@@ -117,9 +117,8 @@ class KnifeChangelog
       end
         .compact
         .map { |json| JSON.parse(json) }
-        .sort_by { |ck| Gem::Version.new(ck['latest_version'].split('/').last) }
         .map { |ck| ck['source_url'] || ck ['external_url'] }
-        .last
+        .first
         .tap do |source|
           raise "Canot find any changelog source for #{name}" unless source
         end
