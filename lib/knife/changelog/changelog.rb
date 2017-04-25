@@ -120,7 +120,7 @@ class KnifeChangelog
         .map { |ck| ck['source_url'] || ck ['external_url'] }
         .first
         .tap do |source|
-          raise "Canot find any changelog source for #{name}" unless source
+          raise "Cannot find any changelog source for #{name}" unless source
         end
     end
 
