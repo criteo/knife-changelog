@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'chef/log'
 require 'chef/knife'
 require 'rest-client'
@@ -73,7 +74,7 @@ class KnifeChangelog
       version_change, changelog = if submodule
                                     handle_submodule(name)
                                   elsif ck_dep(name).nil?
-                                    handle_new_cookbook(name)
+                                    ["", handle_new_cookbook(name)]
                                   else
                                     loc = ck_location(name)
                                     case loc
