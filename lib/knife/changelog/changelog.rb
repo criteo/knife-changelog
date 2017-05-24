@@ -130,7 +130,7 @@ class KnifeChangelog
       raise "No source found in supermarket for cookbook '#{name}'" unless url
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
-      when /(gitlab.*|github).com\/(.*)(.git)?/
+      when /(gitlab.*|github).com\/([^.]+)(.git)?/
         url = "https://#{$1}.com/#{$2.chomp('/')}.git"
         options = {
           :git => url,
