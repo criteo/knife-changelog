@@ -112,7 +112,8 @@ class KnifeChangelog
             method: :get,
             verify_ssl: false # TODO make this configurable
           )
-        rescue
+        rescue => e
+          Chef::Log.debug "Error fetching package from supermarket #{e.class.name} #{e.message}"
           nil
         end
       end
