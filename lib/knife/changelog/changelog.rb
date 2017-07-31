@@ -155,7 +155,7 @@ class KnifeChangelog
       unless revision_exists?(dir, rev)
         prefixed_rev = 'v' + rev
         return prefixed_rev if revision_exists?(dir, prefixed_rev)
-        fail "#{rev} is not a valid revision (#{name})"
+        fail "#{rev} is not an existing revision (#{name}), not a tag/commit/branch name."
       end
       rev
     end
