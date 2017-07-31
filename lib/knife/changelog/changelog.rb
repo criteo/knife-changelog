@@ -119,11 +119,19 @@ class KnifeChangelog
       end
         .compact
         .map { |json| JSON.parse(json) }
+        .sort_by { |ck| cookbook_highest_version(ck) }
         .map { |ck| ck['source_url'] || ck ['external_url'] }
-        .first
+        .last
         .tap do |source|
           raise "Cannot find any changelog source for #{name}" unless source
         end
+    end
+
+    def cookbook_highest_version(json)
+      json['versions']
+        .map { |version_url| Chef::Version.new(version_url.gsub(/.*\//, '')) }
+        .sort
+        .last
     end
 
     def handle_source(name, dep)
@@ -235,6 +243,7 @@ class KnifeChangelog
     end
 
     def shallow_clone(tmp_prefix, uri)
+      Chef::Log.debug "Cloning #{uri} in #{tmp_prefix}"
       dir = Dir.mktmpdir(tmp_prefix)
       @tmp_dirs << dir
       clone = Mixlib::ShellOut.new("git clone --bare #{uri} bare-clone", :cwd => dir)
