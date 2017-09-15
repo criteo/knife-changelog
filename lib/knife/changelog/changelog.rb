@@ -3,11 +3,11 @@ require 'chef/log'
 require 'chef/knife'
 require 'rest-client'
 require 'json'
-require 'berkshelf'
 
 class KnifeChangelog
   class Changelog
     def initialize(locked_versions, config = {}, sources=[])
+      require 'berkshelf'
       @tmp_prefix = 'knife-changelog'
       @locked_versions = locked_versions
       @config   = config

@@ -1,6 +1,3 @@
-require "knife/changelog/version"
-require "knife/changelog/changelog"
-require "berkshelf"
 require 'chef/knife'
 require 'mixlib/shellout'
 
@@ -9,6 +6,12 @@ class Chef
     class Changelog < Knife
 
       banner 'knife changelog COOKBOOK [COOKBOOK ...]'
+
+      deps do
+        require "knife/changelog/version"
+        require "knife/changelog/changelog"
+        require "berkshelf"
+      end
 
       def initialize(options)
         super
