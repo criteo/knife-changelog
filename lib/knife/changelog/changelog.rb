@@ -1,8 +1,10 @@
 # coding: utf-8
 require 'chef/log'
 require 'chef/knife'
+require 'chef/version_class'
 require 'rest-client'
 require 'json'
+require_relative 'git'
 
 class KnifeChangelog
   class Changelog
@@ -152,17 +154,10 @@ class KnifeChangelog
       end
     end
 
-    def revision_exists?(dir, revision)
-      Chef::Log.debug "Testing existence of #{revision}"
-      revlist = Mixlib::ShellOut.new("git rev-list --quiet #{revision}", :cwd => dir)
-      revlist.run_command
-      not revlist.error?
-    end
-
-    def detect_cur_revision(name, dir, rev)
-      unless revision_exists?(dir, rev)
+    def detect_cur_revision(name, rev, git)
+      unless git.revision_exists?(rev)
         prefixed_rev = 'v' + rev
-        return prefixed_rev if revision_exists?(dir, prefixed_rev)
+        return prefixed_rev if git.revision_exists?(prefixed_rev)
         fail "#{rev} is not an existing revision (#{name}), not a tag/commit/branch name."
       end
       rev
@@ -183,38 +178,31 @@ class KnifeChangelog
     end
 
     def handle_git(name, location)
-      tmp_dir = shallow_clone(@tmp_prefix,location.uri)
+      git = Git.new(@tmp_prefix, location.uri)
+      git.shallow_clone
 
       rev_parse = location.instance_variable_get(:@rev_parse)
       cur_rev = location.revision.rstrip
-      cur_rev = detect_cur_revision(name, tmp_dir, cur_rev)
-      ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
-      ls_tree.run_command
-      changelog_file = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
+      cur_rev = detect_cur_revision(name, cur_rev, git)
+      changelog_file = git.files.find { |line| line =~ /\s(changelog.*$)/i }
       changelog = if changelog_file and !@config[:ignore_changelog_file]
                     Chef::Log.info "Found changelog file : " + $1
-                    generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
+                    generate_from_changelog_file($1, cur_rev, rev_parse, git)
                   end
-      changelog ||= generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
+      changelog ||= generate_from_git_history(git, location, cur_rev, rev_parse)
       [ "#{cur_rev}->#{rev_parse}", changelog ]
     end
 
-    def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
-      diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} --word-diff -- #{filename}", :cwd => tmp_dir)
-      diff.run_command
-      ch = diff.
-        stdout.
-        lines.
-        collect {|line| $1.strip if line =~ /^{\+(.*)\+}$/}.compact.
-        map { |line| line.gsub(/^#+(.*)$/, "\\1\n---")}. # replace section by smaller header
-        select { |line| !(line =~ /^===+/)}.compact # remove header lines
+    def generate_from_changelog_file(filename, current_rev, rev_parse, git)
+      ch = git.diff(filename, current_rev, rev_parse)
+              .collect { |line| $1.strip if line =~ /^{\+(.*)\+}$/ }.compact
+              .map { |line| line.gsub(/^#+(.*)$/, "\\1\n---")} # replace section by smaller header
+              .select { |line| !(line =~ /^===+/)}.compact # remove header lines
       ch.empty? ? nil : ch
     end
 
-    def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
-      log = Mixlib::ShellOut.new("git log --no-merges --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
-      log.run_command
-      c = log.stdout.lines
+    def generate_from_git_history(git, location, current_rev, rev_parse)
+      c = git.log(current_rev, rev_parse)
       n = https_url(location)
       c = linkify(n, c) if @config[:linkify] and n
       c = c.map { |line| "* " + line } if @config[:markdown]
@@ -241,16 +229,5 @@ class KnifeChangelog
         "%s/%s" % [$1,$2]
       end
     end
-
-    def shallow_clone(tmp_prefix, uri)
-      Chef::Log.debug "Cloning #{uri} in #{tmp_prefix}"
-      dir = Dir.mktmpdir(tmp_prefix)
-      @tmp_dirs << dir
-      clone = Mixlib::ShellOut.new("git clone --bare #{uri} bare-clone", :cwd => dir)
-      clone.run_command
-      clone.error!
-      ::File.join(dir, 'bare-clone')
-    end
-
   end
 end
