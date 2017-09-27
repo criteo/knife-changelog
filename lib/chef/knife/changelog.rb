@@ -10,13 +10,19 @@ class Chef
       deps do
         require "knife/changelog/version"
         require "knife/changelog/changelog"
+        require "knife/changelog/policyfile"
+        require "knife/changelog/berksfile"
         require "berkshelf"
       end
 
       def initialize(options)
         super
-        berksfile = Berkshelf::Berksfile.from_options({})
-        @changelog = KnifeChangelog::Changelog.new(berksfile.lockfile.locks, config, berksfile.sources)
+        @changelog = if File.exists?('Policyfile.rb')
+                       KnifeChangelog::Changelog::Policyfile.new('Policyfile.rb', config)
+                     else
+                       berksfile = Berkshelf::Berksfile.from_options({})
+                       KnifeChangelog::Changelog::Berksfile.new(berksfile.lockfile.locks, config, berksfile.sources)
+                     end
       end
 
       option :linkify,

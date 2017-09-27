@@ -6,6 +6,17 @@ require 'berkshelf'
 
 WebMock.disable_net_connect!
 
+RSpec.shared_examples 'changelog generation' do
+  # this supposes that "changelog" is an instance of KnifeChangelog::Changelog
+  it 'detects basic changelog' do
+    changelog_txt = changelog.run(%w[new_cookbook uptodate outdated1 second_out_of_date])
+    expect(changelog_txt).to match(/commit in outdated1/)
+    expect(changelog_txt).to match(/commit in second_out_of_date/)
+    expect(changelog_txt).not_to match(/uptodate/)
+    expect(changelog_txt).to match(/new_cookbook: \n.*\nCookbook was not/)
+  end
+end
+
 describe KnifeChangelog::Changelog do
   before(:each) do
     stub_request(:get, %r{https://mysupermarket.io/api/v1/cookbooks/})
@@ -13,7 +24,11 @@ describe KnifeChangelog::Changelog do
 
     mock_supermarket('uptodate', %w[1.0.0])
     mock_supermarket('outdated1', %w[1.0.0 1.1.0])
+    # TODO: we should make second_out_of_date a git location
     mock_supermarket('second_out_of_date', %w[1.0.0 1.2.0])
+
+    mock_universe('https://mysupermarket2.io', uptodate: %w[1.0.0], outdated1: %w[1.0.0 1.1.0], second_out_of_date: %w[1.0.0 1.2.0])
+    mock_universe('https://mysupermarket.io', {})
 
     mock_git('second_out_of_date', <<~EOH)
         aaaaaa commit in second_out_of_date
@@ -28,9 +43,9 @@ describe KnifeChangelog::Changelog do
 
   def mock_git(name, changelog)
     expect(KnifeChangelog::Git).to receive(:new)
-      .with(anything, /#{name}.git/)
+      .with(anything, /#{name}(.git|$)/)
       .and_return(double(name,
-    shallow_clone: true,
+    shallow_clone: '/tmp/randomdir12345',
     revision_exists?: true,
     files: [],
     log: changelog.split("\n")))
@@ -56,6 +71,21 @@ describe KnifeChangelog::Changelog do
     end.to_json
   end
 
+  def mock_universe(supermarket_url, cookbooks)
+    universe = cookbooks.transform_values do |versions|
+      versions.map do |v|
+        [v, {
+          location_type: 'opscode',
+          location_path: "#{supermarket_url}/api/v1",
+          download_url: "#{supermarket_url}/api/v1/cookbooks/insertnamehere/versions/#{v}/download",
+          dependencies: {}
+        }]
+      end.to_h
+    end
+    stub_request(:get, "#{supermarket_url}/universe")
+      .to_return(status: 200, body: universe.to_json)
+  end
+
   context 'in Berksfile mode' do
     let(:berksfile) do
       Berkshelf::Berksfile.from_options(
@@ -64,17 +94,23 @@ describe KnifeChangelog::Changelog do
     end
 
     let(:changelog) do
-      KnifeChangelog::Changelog.new(berksfile.lockfile.locks, {}, berksfile.sources)
+      KnifeChangelog::Changelog::Berksfile.new(berksfile.lockfile.locks, {}, berksfile.sources)
     end
 
-    it 'detects basic changelog' do
-      changelog_txt = changelog.run(%w[uptodate outdated1 second_out_of_date])
-      expect(changelog_txt).to match(/commit in outdated1/)
-      expect(changelog_txt).to match(/commit in second_out_of_date/)
-      expect(changelog_txt).not_to match(/uptodate/)
-    end
+    include_examples 'changelog generation'
   end
 
   context 'in policyfile mode' do
+    let(:policyfile_path) { File.join(File.dirname(__FILE__), '../data/Policyfile.rb') }
+
+    let(:changelog) do
+      KnifeChangelog::Changelog::Policyfile.new(policyfile_path, {})
+    end
+
+    before(:each) do
+      allow(changelog.policy).to receive(:cache_fixed_version_cookbooks)
+    end
+
+    include_examples 'changelog generation'
   end
 end
