@@ -30,11 +30,11 @@ describe KnifeChangelog::Changelog do
     mock_universe('https://mysupermarket2.io', uptodate: %w[1.0.0], outdated1: %w[1.0.0 1.1.0], second_out_of_date: %w[1.0.0 1.2.0])
     mock_universe('https://mysupermarket.io', {})
 
-    mock_git('second_out_of_date', <<~EOH)
+    mock_git('second_out_of_date', <<-EOH)
         aaaaaa commit in second_out_of_date
         bbbbbb bugfix in second_out_of_date
     EOH
-    mock_git('outdated1', <<~EOH)
+    mock_git('outdated1', <<-EOH)
         aaaaaa commit in outdated1
         bbbbbb bugfix in outdated1
     EOH
@@ -112,5 +112,13 @@ describe KnifeChangelog::Changelog do
     end
 
     include_examples 'changelog generation'
+  end
+end
+
+class Hash
+  unless Chef::Version.new(RUBY_VERSION) >= Chef::Version.new('2.4')
+    def transform_values
+      map { |k, v| [k, (yield v)] }.to_h
+    end
   end
 end

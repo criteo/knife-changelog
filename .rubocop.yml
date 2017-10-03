@@ -30,4 +30,4 @@ Metrics/CyclomaticComplexity:
 AllCops:
   Exclude:
   - bundle/**/*
-  TargetRubyVersion: 2.4
+  TargetRubyVersion: 2.3
