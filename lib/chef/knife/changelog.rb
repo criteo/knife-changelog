@@ -17,8 +17,8 @@ class Chef
 
       def initialize(options)
         super
-        @changelog = if File.exists?('Policyfile.rb')
-                       KnifeChangelog::Changelog::Policyfile.new('Policyfile.rb', config)
+        @changelog = if File.exists?(config[:policyfile])
+                       KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
                      else
                        berksfile = Berkshelf::Berksfile.from_options({})
                        KnifeChangelog::Changelog::Berksfile.new(berksfile.lockfile.locks, config, berksfile.sources)
@@ -51,6 +51,11 @@ class Chef
       option :submodules,
         :long => '--submodules SUBMODULE[,SUBMODULE]',
         :description => 'Submoduless to check for changes as well (comma separated)'
+
+      option :policyfile,
+        :long => '--policyfile PATH',
+        :description => 'Link to policyfile, defaults to Policyfile.rb',
+        :default => 'Policyfile.rb'
 
 
       def run
