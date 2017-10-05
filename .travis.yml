@@ -8,5 +8,5 @@ deploy:
   gem: knife-changelog
   on:
     tags: true
-    repo: kamaradclimber/knife-changelog
+    repo: criteo/knife-changelog
 sudo: false # use docker based infra
