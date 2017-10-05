@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source 'https://mysupermarket.io'
+source 'https://mysupermarket2.io'
+
+cookbook 'uptodate'
+cookbook 'outdated1'
+cookbook 'second_out_of_date'
+cookbook 'othercookbook'

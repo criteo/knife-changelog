@@ -1,28 +1,77 @@
 # coding: utf-8
 require 'chef/log'
 require 'chef/knife'
+require 'chef/version_class'
 require 'rest-client'
 require 'json'
+require_relative 'git'
 
 class KnifeChangelog
   class Changelog
-    def initialize(locked_versions, config = {}, sources=[])
-      require 'berkshelf'
-      @tmp_prefix = 'knife-changelog'
-      @locked_versions = locked_versions
-      @config   = config
-      @tmp_dirs = []
-      @sources = sources
-      if sources.empty? # preserve api compat
-        @sources = [ Berkshelf::Source.new("https://supermarket.chef.io") ]
+
+    Location = Struct.new(:uri, :revision, :rev_parse) do
+      # todo move this method to Changelog::Berkshelf
+      def self.from_berk_git_location(location)
+        Location.new(location.uri,
+                     location.revision.strip,
+                     location.instance_variable_get(:@rev_parse))
       end
     end
+
+    def initialize(config)
+      @tmp_prefix = 'knife-changelog'
+      @config   = config
+      @tmp_dirs = []
+    end
+
+    # returns a list of all cookbooks names
+    def all_cookbooks
+      raise NotImplementedError
+    end
+
+    # return true if cookbook is not already listed as dependency
+    def new_cookbook?(name)
+      raise NotImplementedError
+    end
+
+    # return true if cookbook is downloaded from supermarket
+    def supermarket?(name)
+      raise NotImplementedError
+    end
+
+    # return true if cookbook is downloaded from git
+    def git?(name)
+      raise NotImplementedError
+    end
+
+    # return true if cookbook is downloaded from local path
+    def local?(name)
+      raise NotImplementedError
+    end
+
+    # return a Changelog::Location for a given cookbook
+    def git_location(name)
+      raise NotImplementedError
+    end
+
+    # return a list of supermarket uri for a given cookbook
+    # example: [ 'https://supermarket.chef.io' ]
+    def supermarkets_for(name)
+      raise NotImplementedError
+    end
+
+    # return current locked version for a given cookbook
+    def guess_version_for(name)
+      raise NotImplementedError
+    end
+
+
 
     def run(cookbooks)
       changelog = []
       begin
         if cookbooks.empty? and @config[:allow_update_all]
-          cks = @locked_versions.keys
+          cks = all_cookbooks
         else
           cks = cookbooks
         end
@@ -44,47 +93,29 @@ class KnifeChangelog
 
     def clean
       @tmp_dirs.each do |dir|
-        FileUtils.rm_r dir
+        FileUtils.rm_rf dir
       end
     end
 
-    def ck_dep(name)
-      @locked_versions[name]
-    end
-
-    def ck_location(name)
-      begin
-        ck_dep(name).location
-      rescue
-        puts "Failed to get location for cookbook: #{name}"
-        raise
-      end
-    end
-
-    def guess_version_for(name)
-      @locked_versions[name].locked_version.to_s
-    end
-
-    def handle_new_cookbook(name)
+    def handle_new_cookbook
       stars = '**' if @config[:markdown]
       ["#{stars}Cookbook was not in the berksfile#{stars}"]
     end
 
-    def execute(name, submodule=false)
+    def execute(name, submodule = false)
       version_change, changelog = if submodule
                                     handle_submodule(name)
-                                  elsif ck_dep(name).nil?
-                                    ["", handle_new_cookbook(name)]
+                                  elsif new_cookbook?(name)
+                                    ['', handle_new_cookbook]
                                   else
-                                    loc = ck_location(name)
-                                    case loc
-                                    when NilClass
-                                      handle_source name, ck_dep(name)
-                                    when Berkshelf::GitLocation
-                                      handle_git name, loc
-                                    when Berkshelf::PathLocation
+                                    case true
+                                    when supermarket?(name)
+                                      handle_source(name)
+                                    when git?(name)
+                                      handle_git(name, git_location(name))
+                                    when local?(name)
                                       Chef::Log.debug "path location are always at the last version"
-                                      ["", ""]
+                                      ['', '']
                                     else
                                       raise "Cannot handle #{loc.class} yet"
                                     end
@@ -105,12 +136,14 @@ class KnifeChangelog
     end
 
     def get_from_supermarket_sources(name)
-      @sources.map do |s|
+      supermarkets_for(name).map do |uri|
         begin
+          # TODO: we could call /universe endpoint once
+          # instead of calling /api/v1/cookbooks/ for each cookbook
           RestClient::Request.execute(
-            url: "#{s.uri}/api/v1/cookbooks/#{name}",
+            url: "#{uri}/api/v1/cookbooks/#{name}",
             method: :get,
-            verify_ssl: false # TODO make this configurable
+            verify_ssl: false # TODO make this configurable
           )
         rescue => e
           Chef::Log.debug "Error fetching package from supermarket #{e.class.name} #{e.message}"
@@ -134,35 +167,24 @@ class KnifeChangelog
         .last
     end
 
-    def handle_source(name, dep)
+    def handle_source(name)
       url = get_from_supermarket_sources(name)
       raise "No source found in supermarket for cookbook '#{name}'" unless url
       Chef::Log.debug("Using #{url} as source url")
       case url.strip
       when /(gitlab.*|github).com\/([^.]+)(.git)?/
         url = "https://#{$1}.com/#{$2.chomp('/')}.git"
-        options = {
-          :git => url,
-          :revision => guess_version_for(name),
-        }
-        location = Berkshelf::GitLocation.new dep, options
+        location = Location.new(url, guess_version_for(name), 'master')
         handle_git(name, location)
       else
         fail "External url #{url} points to unusable location! (cookbook: #{name})"
       end
     end
 
-    def revision_exists?(dir, revision)
-      Chef::Log.debug "Testing existence of #{revision}"
-      revlist = Mixlib::ShellOut.new("git rev-list --quiet #{revision}", :cwd => dir)
-      revlist.run_command
-      not revlist.error?
-    end
-
-    def detect_cur_revision(name, dir, rev)
-      unless revision_exists?(dir, rev)
+    def detect_cur_revision(name, rev, git)
+      unless git.revision_exists?(rev)
         prefixed_rev = 'v' + rev
-        return prefixed_rev if revision_exists?(dir, prefixed_rev)
+        return prefixed_rev if git.revision_exists?(prefixed_rev)
         fail "#{rev} is not an existing revision (#{name}), not a tag/commit/branch name."
       end
       rev
@@ -178,43 +200,38 @@ class KnifeChangelog
       subm_revision.error!
       revision = subm_revision.stdout.strip.split(' ').first
       revision.gsub!(/^\+/, '')
-      loc = Berkshelf::Location.init(nil, {git: url,revision: revision})
+      loc = Location.new(url, revision, 'master')
       handle_git(name, loc)
     end
 
+    # take cookbook name and Changelog::Location instance
     def handle_git(name, location)
-      tmp_dir = shallow_clone(@tmp_prefix,location.uri)
+      # todo: remove this compat check
+      raise "should be a location" unless location.is_a?(Changelog::Location)
+      git = Git.new(@tmp_prefix, location.uri)
+      @tmp_dirs << git.shallow_clone
 
-      rev_parse = location.instance_variable_get(:@rev_parse)
-      cur_rev = location.revision.rstrip
-      cur_rev = detect_cur_revision(name, tmp_dir, cur_rev)
-      ls_tree = Mixlib::ShellOut.new("git ls-tree -r #{rev_parse}", :cwd => tmp_dir)
-      ls_tree.run_command
-      changelog_file = ls_tree.stdout.lines.find { |line| line =~ /\s(changelog.*$)/i }
+      rev_parse = location.rev_parse
+      cur_rev = detect_cur_revision(name, location.revision, git)
+      changelog_file = git.files(rev_parse).find { |line| line =~ /\s(changelog.*$)/i }
       changelog = if changelog_file and !@config[:ignore_changelog_file]
                     Chef::Log.info "Found changelog file : " + $1
-                    generate_from_changelog_file($1, cur_rev, rev_parse, tmp_dir)
+                    generate_from_changelog_file($1, cur_rev, rev_parse, git)
                   end
-      changelog ||= generate_from_git_history(tmp_dir, location, cur_rev, rev_parse)
-      [ "#{cur_rev}->#{rev_parse}", changelog ]
+      changelog ||= generate_from_git_history(git, location, cur_rev, rev_parse)
+      ["#{cur_rev}->#{rev_parse}", changelog]
     end
 
-    def generate_from_changelog_file(filename, current_rev, rev_parse, tmp_dir)
-      diff = Mixlib::ShellOut.new("git diff #{current_rev}..#{rev_parse} --word-diff -- #{filename}", :cwd => tmp_dir)
-      diff.run_command
-      ch = diff.
-        stdout.
-        lines.
-        collect {|line| $1.strip if line =~ /^{\+(.*)\+}$/}.compact.
-        map { |line| line.gsub(/^#+(.*)$/, "\\1\n---")}. # replace section by smaller header
-        select { |line| !(line =~ /^===+/)}.compact # remove header lines
+    def generate_from_changelog_file(filename, current_rev, rev_parse, git)
+      ch = git.diff(filename, current_rev, rev_parse)
+              .collect { |line| $1.strip if line =~ /^{\+(.*)\+}$/ }.compact
+              .map { |line| line.gsub(/^#+(.*)$/, "\\1\n---")} # replace section by smaller header
+              .select { |line| !(line =~ /^===+/)}.compact # remove header lines
       ch.empty? ? nil : ch
     end
 
-    def generate_from_git_history(tmp_dir, location, current_rev, rev_parse)
-      log = Mixlib::ShellOut.new("git log --no-merges --abbrev-commit --pretty=oneline #{current_rev}..#{rev_parse}", :cwd => tmp_dir)
-      log.run_command
-      c = log.stdout.lines
+    def generate_from_git_history(git, location, current_rev, rev_parse)
+      c = git.log(current_rev, rev_parse)
       n = https_url(location)
       c = linkify(n, c) if @config[:linkify] and n
       c = c.map { |line| "* " + line } if @config[:markdown]
@@ -241,16 +258,5 @@ class KnifeChangelog
         "%s/%s" % [$1,$2]
       end
     end
-
-    def shallow_clone(tmp_prefix, uri)
-      Chef::Log.debug "Cloning #{uri} in #{tmp_prefix}"
-      dir = Dir.mktmpdir(tmp_prefix)
-      @tmp_dirs << dir
-      clone = Mixlib::ShellOut.new("git clone --bare #{uri} bare-clone", :cwd => dir)
-      clone.run_command
-      clone.error!
-      ::File.join(dir, 'bare-clone')
-    end
-
   end
 end

@@ -22,10 +22,13 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "rubocop"
+  spec.add_development_dependency "webmock"
+  spec.add_development_dependency "pry"
 
 
   spec.add_dependency  'berkshelf'
   spec.add_dependency  'rest-client'
   spec.add_dependency  'mixlib-shellout'
   spec.add_dependency  'chef'
+  spec.add_dependency  'chef-dk'
 end

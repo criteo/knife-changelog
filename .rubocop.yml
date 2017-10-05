@@ -1,5 +1,33 @@
-AllCops:
-  TargetRubyVersion: 2.1
+# Configuration parameters: AllowHeredoc, AllowURI, URISchemes.
+# URISchemes: http, https
+Metrics/ClassLength:
+  Max: 200
 
 Metrics/LineLength:
-  Max: 150
+  Max: 230
+
+Metrics/MethodLength:
+  Max: 30
+
+# Cop supports --auto-correct.
+# Configuration parameters: SupportedStyles, UseHashRocketsWithSymbolValues, PreferHashRocketsForNonAlnumEndingSymbols.
+# SupportedStyles: ruby19, ruby19_no_mixed_keys, hash_rockets
+Style/HashSyntax:
+  EnforcedStyle: ruby19_no_mixed_keys
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/AbcSize:
+  Max: 52
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+Metrics/CyclomaticComplexity:
+  Max: 25
+
+AllCops:
+  Exclude:
+  - bundle/**/*
+  TargetRubyVersion: 2.3
