@@ -17,7 +17,7 @@ class Chef
 
       def initialize(options)
         super
-        @changelog = if File.exists?(config[:policyfile])
+        @changelog = if config[:policyfile] && File.exists?(config[:policyfile])
                        KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
                      else
                        berksfile = Berkshelf::Berksfile.from_options({})
