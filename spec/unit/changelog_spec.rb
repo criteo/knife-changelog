@@ -9,6 +9,16 @@ WebMock.disable_net_connect!
 RSpec.shared_examples 'changelog generation' do
   # this supposes that "changelog" is an instance of KnifeChangelog::Changelog
   it 'detects basic changelog' do
+    mock_git('second_out_of_date', <<-EOH)
+        aaaaaa commit in second_out_of_date
+        bbbbbb bugfix in second_out_of_date
+    EOH
+    mock_git('outdated1', <<-EOH)
+        aaaaaa commit in outdated1
+        bbbbbb bugfix in outdated1
+    EOH
+    mock_git('uptodate', '')
+
     changelog_txt = changelog.run(%w[new_cookbook uptodate outdated1 second_out_of_date])
     expect(changelog_txt).to match(/commit in outdated1/)
     expect(changelog_txt).to match(/commit in second_out_of_date/)
@@ -29,16 +39,6 @@ describe KnifeChangelog::Changelog do
 
     mock_universe('https://mysupermarket2.io', uptodate: %w[1.0.0], outdated1: %w[1.0.0 1.1.0], second_out_of_date: %w[1.0.0 1.2.0])
     mock_universe('https://mysupermarket.io', {})
-
-    mock_git('second_out_of_date', <<-EOH)
-        aaaaaa commit in second_out_of_date
-        bbbbbb bugfix in second_out_of_date
-    EOH
-    mock_git('outdated1', <<-EOH)
-        aaaaaa commit in outdated1
-        bbbbbb bugfix in outdated1
-    EOH
-    mock_git('uptodate', '')
   end
 
   def mock_git(name, changelog)
@@ -93,18 +93,40 @@ describe KnifeChangelog::Changelog do
       )
     end
 
+    let(:options) do
+      {}
+    end
+
     let(:changelog) do
-      KnifeChangelog::Changelog::Berksfile.new(berksfile.lockfile.locks, {}, berksfile.sources)
+      KnifeChangelog::Changelog::Berksfile.new(berksfile, options)
     end
 
     include_examples 'changelog generation'
+
+    context 'with --update' do
+      let(:options) do
+        { update: true }
+      end
+      it 'updates Berksfile' do
+        mock_git('outdated1', <<-EOH)
+          aaaaaa commit in outdated1
+          bbbbbb bugfix in outdated1
+        EOH
+        expect(berksfile).to receive(:update).with('outdated1')
+        changelog.run(%w[outdated1])
+      end
+    end
   end
 
   context 'in policyfile mode' do
     let(:policyfile_path) { File.join(File.dirname(__FILE__), '../data/Policyfile.rb') }
 
+    let(:options) do
+      {}
+    end
+
     let(:changelog) do
-      KnifeChangelog::Changelog::Policyfile.new(policyfile_path, {})
+      KnifeChangelog::Changelog::Policyfile.new(policyfile_path, options)
     end
 
     before(:each) do
@@ -112,6 +134,19 @@ describe KnifeChangelog::Changelog do
     end
 
     include_examples 'changelog generation'
+
+    context 'with --update' do
+      let(:options) do
+        { update: true }
+      end
+      it 'fails with not implemented error' do
+        mock_git('outdated1', <<-EOH)
+          aaaaaa commit in outdated1
+          bbbbbb bugfix in outdated1
+        EOH
+        expect { changelog.run(%w[outdated1]) }.to raise_error(NotImplementedError)
+      end
+    end
   end
 end
 

@@ -5,10 +5,11 @@ require_relative 'changelog'
 class KnifeChangelog
   class Changelog
     class Berksfile < Changelog
-      def initialize(locked_versions, config, sources)
+      def initialize(berksfile, config)
         require 'berkshelf'
-        @locked_versions = locked_versions
-        @sources = sources
+        @locked_versions = berksfile.lockfile.locks
+        @sources = berksfile.sources
+        @berksfile = berksfile
         super(config)
       end
 
@@ -51,6 +52,10 @@ class KnifeChangelog
 
       def guess_version_for(name)
         @locked_versions[name].locked_version.to_s
+      end
+
+      def update(cookbooks)
+        @berksfile.update(*cookbooks)
       end
 
       private

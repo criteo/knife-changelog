@@ -21,7 +21,7 @@ class Chef
                        KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
                      else
                        berksfile = Berkshelf::Berksfile.from_options({})
-                       KnifeChangelog::Changelog::Berksfile.new(berksfile.lockfile.locks, config, berksfile.sources)
+                       KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
                      end
       end
 
@@ -57,6 +57,9 @@ class Chef
         :description => 'Link to policyfile, defaults to Policyfile.rb',
         :default => 'Policyfile.rb'
 
+      option :update,
+        :long => '--update',
+        :description => 'Update Berksfile'
 
       def run
         Log.info config
