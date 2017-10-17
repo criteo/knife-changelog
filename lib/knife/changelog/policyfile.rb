@@ -55,6 +55,10 @@ class KnifeChangelog
         Location.new(spec[:git], spec[:revision], spec[:branch])
       end
 
+      def update(cookbooks)
+        raise NotImplementedError
+      end
+
       # return a list of supermarket uri for a given cookbook
       # example: [ 'https://supermarket.chef.io' ]
       def supermarkets_for(name)

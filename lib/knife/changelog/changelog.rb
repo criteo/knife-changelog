@@ -85,6 +85,7 @@ class KnifeChangelog
           Chef::Log.debug "Checking changelog for #{submodule} (submodule)"
           execute(submodule, true)
         end
+        update(cks) if @config[:update]
       ensure
         clean
       end
