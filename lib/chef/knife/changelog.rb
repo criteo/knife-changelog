@@ -15,16 +15,6 @@ class Chef
         require "berkshelf"
       end
 
-      def initialize(options)
-        super
-        @changelog = if config[:policyfile] && File.exists?(config[:policyfile])
-                       KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
-                     else
-                       berksfile = Berkshelf::Berksfile.from_options({})
-                       KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
-                     end
-      end
-
       option :linkify,
         :short => '-l',
         :long  => '--linkify',
@@ -63,8 +53,14 @@ class Chef
 
       def run
         Log.info config
-        changelog = @changelog.run(@name_args)
-        puts changelog
+        @changelog = if config[:policyfile] && File.exists?(config[:policyfile])
+                       KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
+                     else
+                       berksfile = Berkshelf::Berksfile.from_options({})
+                       KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
+                     end
+        changelog_text = @changelog.run(@name_args)
+        puts changelog_text
       end
     end
 
