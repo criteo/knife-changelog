@@ -172,14 +172,8 @@ class KnifeChangelog
       url = get_from_supermarket_sources(name)
       raise "No source found in supermarket for cookbook '#{name}'" unless url
       Chef::Log.debug("Using #{url} as source url")
-      case url.strip
-      when /(gitlab.*|github).com\/([^.]+)(.git)?/
-        url = "https://#{$1}.com/#{$2.chomp('/')}.git"
-        location = Location.new(url, guess_version_for(name), 'master')
-        handle_git(name, location)
-      else
-        fail "External url #{url} points to unusable location! (cookbook: #{name})"
-      end
+      location = Location.new(url, guess_version_for(name), 'master')
+      handle_git(name, location)
     end
 
     def detect_cur_revision(name, rev, git)
