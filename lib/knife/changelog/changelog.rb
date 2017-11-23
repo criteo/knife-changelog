@@ -120,20 +120,13 @@ class KnifeChangelog
     end
 
     def handle_source(name, dep)
-      url = get_from_supermarket_sources(name)
       Chef::Log.debug("Using #{url} as source url")
-      case url.strip
-      when /github.com\/(.*)(.git)?/
-        url = "https://github.com/#{$1.chomp('/')}.git"
-        options = {
-          :git => url,
-          :revision => guess_version_for(name),
-        }
-        location = Berkshelf::GitLocation.new dep, options
-        handle_git(name, location)
-      else
-        fail "External url #{url} points to unusable location!"
-      end
+      options = {
+        :git => get_from_supermarket_sources(name),
+        :revision => guess_version_for(name),
+      }
+      location = Berkshelf::GitLocation.new dep, options
+      handle_git(name, location)
     end
 
     def revision_exists?(dir, revision)
