@@ -172,6 +172,11 @@ class KnifeChangelog
       url = get_from_supermarket_sources(name)
       raise "No source found in supermarket for cookbook '#{name}'" unless url
       Chef::Log.debug("Using #{url} as source url")
+      # Workaround source_url not being written in a clonable way.
+      # github.com/blah/cookbook works but git clone requires github.com/blah/cookbook.git
+      if !url.end_with?('.git')
+        url = "#{url}.git"
+      end
       location = Location.new(url, guess_version_for(name), 'master')
       handle_git(name, location)
     end
