@@ -22,7 +22,7 @@ class KnifeChangelog
 
       # return true if cookbook is not already listed as dependency
       def new_cookbook?(name)
-        policy.send(:best_source_for, name).nil?
+        lock.solution_dependencies.cookbook_dependencies.keys.find { |dep| dep.name == name }.nil?
       end
 
       # return true if cookbook is downloaded from supermarket

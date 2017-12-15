@@ -51,6 +51,12 @@ class Chef
         :long => '--update',
         :description => 'Update Berksfile'
 
+      option :allow_errors,
+        :long => '--allow-errors',
+        :description => "Don't fail entire changelog if a source is not available",
+        :boolean => true,
+        :default => false
+
       def run
         Log.info config
         @changelog = if config[:policyfile] && File.exists?(config[:policyfile])
