@@ -17,7 +17,7 @@ class KnifeChangelog
       end
 
       def all_cookbooks
-        policy.all_possible_dep_names
+        policy.solution_dependencies.cookbook_deps_for_lock.map { |k, v| k.scan(/(.*) \(.*\)/).last.first }
       end
 
       # return true if cookbook is not already listed as dependency

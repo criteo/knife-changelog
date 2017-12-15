@@ -147,6 +147,32 @@ describe KnifeChangelog::Changelog do
         expect { changelog.run(%w[outdated1]) }.to raise_error(NotImplementedError)
       end
     end
+
+    context 'whith --allow-update-all ' do
+      let(:options) do
+        { "allow_update_all": true }
+      end
+
+      it 'should compute the changelog of all dependencies' do
+        mock_git('second_out_of_date', <<-EOH)
+            aaaaaa commit in second_out_of_date
+            bbbbbb bugfix in second_out_of_date
+        EOH
+        mock_git('outdated1', <<-EOH)
+            aaaaaa commit in outdated1
+            bbbbbb bugfix in outdated1
+        EOH
+        mock_git('uptodate', '')
+
+        expect(changelog).to receive(:supermarkets_for).with('outdated1')
+          .and_return(["https://mysupermarket2.io"])
+        expect(changelog).to receive(:supermarkets_for).with('second_out_of_date')
+          .and_return(["https://mysupermarket2.io"])
+        expect(changelog).to receive(:supermarkets_for).with('uptodate')
+          .and_return(["https://mysupermarket2.io"])
+        changelog.run([])
+      end
+    end
   end
 end
 
