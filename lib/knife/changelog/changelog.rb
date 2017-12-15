@@ -100,28 +100,34 @@ class KnifeChangelog
 
     def handle_new_cookbook
       stars = '**' if @config[:markdown]
-      ["#{stars}Cookbook was not in the berksfile#{stars}"]
+      ["#{stars}Cookbook was not in the berksfile/policyfile#{stars}"]
     end
 
     def execute(name, submodule = false)
-      version_change, changelog = if submodule
-                                    handle_submodule(name)
-                                  elsif new_cookbook?(name)
-                                    ['', handle_new_cookbook]
-                                  else
-                                    case true
-                                    when supermarket?(name)
-                                      handle_source(name)
-                                    when git?(name)
-                                      handle_git(name, git_location(name))
-                                    when local?(name)
-                                      Chef::Log.debug "path location are always at the last version"
-                                      ['', '']
+      begin
+        version_change, changelog = if submodule
+                                      handle_submodule(name)
+                                    elsif new_cookbook?(name)
+                                      ['', handle_new_cookbook]
                                     else
-                                      raise "Cannot handle #{loc.class} yet"
+                                      case true
+                                      when git?(name)
+                                        handle_git(name, git_location(name))
+                                      when supermarket?(name)
+                                        handle_source(name)
+                                      when local?(name)
+                                        Chef::Log.debug "path location are always at the last version"
+                                        ['', '']
+                                      else
+                                        raise "Cannot handle #{loc.class} yet"
+                                      end
                                     end
-                                  end
-      format_changelog(name, version_change, changelog)
+      rescue StandardError
+        raise unless @config[:allow_errors]
+        format_changelog(name, 'ERROR', 'ERROR! source_url not found or incompatible. Impossible to show changelog')
+      else
+        format_changelog(name, version_change, changelog)
+      end
     end
 
     def format_changelog(name, version_change, changelog)
@@ -185,6 +191,11 @@ class KnifeChangelog
       unless git.revision_exists?(rev)
         prefixed_rev = 'v' + rev
         return prefixed_rev if git.revision_exists?(prefixed_rev)
+        if rev.split('.')[-1] == '0' # It is the first rev for a major/minor, might be missing
+          short_rev = rev.split('.')[0...-1].join('.')
+          return short_rev if git.revision_exists?(short_rev)
+          return 'v' + short_rev if git.revision_exists?('v' + short_rev)
+        end
         fail "#{rev} is not an existing revision (#{name}), not a tag/commit/branch name."
       end
       rev
