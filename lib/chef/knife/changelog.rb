@@ -4,7 +4,6 @@ require 'mixlib/shellout'
 class Chef
   class Knife
     class Changelog < Knife
-
       banner 'knife changelog COOKBOOK [COOKBOOK ...]'
 
       deps do
@@ -44,7 +43,7 @@ class Chef
 
       option :policyfile,
         :long => '--policyfile PATH',
-        :description => 'Link to policyfile, defaults to Policyfile.rb',
+        :description => 'Link to policyfile, defaults to "Policyfile.rb"',
         :default => 'Policyfile.rb'
 
       option :update,
@@ -53,16 +52,15 @@ class Chef
 
       def run
         Log.info config
-        @changelog = if config[:policyfile] && File.exists?(config[:policyfile])
-                       KnifeChangelog::Changelog::Policyfile.new(config[:policyfile], config)
-                     else
-                       berksfile = Berkshelf::Berksfile.from_options({})
-                       KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
-                     end
-        changelog_text = @changelog.run(@name_args)
-        puts changelog_text
+        if config[:policyfile] && File.exist?(config[:policyfile])
+          PolicyChangelog.new(@name_args, config[:policyfile]).generate_changelog
+        else
+          berksfile = Berkshelf::Berksfile.from_options({})
+          @changelog = KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
+          changelog_text = @changelog.run(@name_args)
+          puts changelog_text
+        end
       end
     end
-
   end
 end

@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../spec_helper'
-require 'webmock/rspec'
 require 'berkshelf'
-
-WebMock.disable_net_connect!
+require 'spec_helper'
 
 RSpec.shared_examples 'changelog generation' do
   # this supposes that "changelog" is an instance of KnifeChangelog::Changelog
@@ -114,63 +111,6 @@ describe KnifeChangelog::Changelog do
         EOH
         expect(berksfile).to receive(:update).with('outdated1')
         changelog.run(%w[outdated1])
-      end
-    end
-  end
-
-  context 'in policyfile mode' do
-    let(:policyfile_path) { File.join(File.dirname(__FILE__), '../data/Policyfile.rb') }
-
-    let(:options) do
-      {}
-    end
-
-    let(:changelog) do
-      KnifeChangelog::Changelog::Policyfile.new(policyfile_path, options)
-    end
-
-    before(:each) do
-      allow(changelog.policy).to receive(:cache_fixed_version_cookbooks)
-    end
-
-    include_examples 'changelog generation'
-
-    context 'with --update' do
-      let(:options) do
-        { update: true }
-      end
-      it 'fails with not implemented error' do
-        mock_git('outdated1', <<-EOH)
-          aaaaaa commit in outdated1
-          bbbbbb bugfix in outdated1
-        EOH
-        expect { changelog.run(%w[outdated1]) }.to raise_error(NotImplementedError)
-      end
-    end
-
-    context 'whith --allow-update-all ' do
-      let(:options) do
-        { "allow_update_all": true }
-      end
-
-      it 'should compute the changelog of all dependencies' do
-        mock_git('second_out_of_date', <<-EOH)
-            aaaaaa commit in second_out_of_date
-            bbbbbb bugfix in second_out_of_date
-        EOH
-        mock_git('outdated1', <<-EOH)
-            aaaaaa commit in outdated1
-            bbbbbb bugfix in outdated1
-        EOH
-        mock_git('uptodate', '')
-
-        expect(changelog).to receive(:supermarkets_for).with('outdated1')
-          .and_return(["https://mysupermarket2.io"])
-        expect(changelog).to receive(:supermarkets_for).with('second_out_of_date')
-          .and_return(["https://mysupermarket2.io"])
-        expect(changelog).to receive(:supermarkets_for).with('uptodate')
-          .and_return(["https://mysupermarket2.io"])
-        changelog.run([])
       end
     end
   end
