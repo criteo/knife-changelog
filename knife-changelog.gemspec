@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.version       = Knife::Changelog::VERSION
   spec.authors       = ['Gregoire Seux']
   spec.email         = ['kamaradclimber@gmail.com']
-  spec.summary       = %q{Facilitate access to cookbooks changelog}
-  spec.description   = %q{}
+  spec.summary       = 'Facilitate access to cookbooks changelog'
+  spec.description   = ''
   spec.homepage      = 'https://github.com/kamaradclimber/knife-changelog'
   spec.license       = 'MIT'
 
