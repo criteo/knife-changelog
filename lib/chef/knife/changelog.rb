@@ -11,9 +11,9 @@ class Chef
       deps do
         require 'knife/changelog/version'
         require 'knife/changelog/changelog'
-        require 'knife/changelog/policyfile'
         require 'knife/changelog/berksfile'
         require 'berkshelf'
+        require 'policyfile'
       end
 
       option :linkify,
@@ -58,9 +58,9 @@ class Chef
           PolicyChangelog.new(@name_args, config[:policyfile]).generate_changelog
         else
           berksfile = Berkshelf::Berksfile.from_options({})
-          @changelog = KnifeChangelog::Changelog::Berksfile.new(berksfile, config)
-          changelog_text = @changelog.run(@name_args)
-          puts changelog_text
+          puts KnifeChangelog::Changelog::Berksfile
+            .new(berksfile, config)
+            .run(@name_args)
         end
       end
     end

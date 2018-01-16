@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'chef'
 require 'chef/knife'
 require 'chef-dk/command/update'
 require 'deep_merge'
@@ -44,9 +45,11 @@ class PolicyChangelog
   # @param dir [String] directory containing Policyfile.lock
   # @return [Hash] contents of Policyfile.lock
   def read_policyfile_lock(dir)
-    pf_lock = File.join(dir, 'Policyfile.lock.json')
-    raise "File #{pf_lock} does not exist" unless File.exist?(pf_lock)
-    JSON.parse(File.read(pf_lock))
+    lock = File.join(dir, 'Policyfile.lock.json')
+    raise "File #{lock} does not exist" unless File.exist?(lock)
+    content = JSON.parse(File.read(lock))
+    raise 'Policyfile.lock empty' if content.empty?
+    content
   end
 
   # Extracts current or target versions from Policyfile.lock data depending
@@ -57,6 +60,7 @@ class PolicyChangelog
   # @return [Hash] cookbooks with their versions
   def versions(locks, type)
     raise 'Use "current" or "target" as type' unless %w[current target].include?(type)
+    raise 'Cookbook locks empty or nil' if locks.nil? or locks.empty?
     cookbooks = {}
     locks.each do |name, data|
       cookbooks[name] = { "#{type}_version" => data['version'] }
@@ -135,6 +139,7 @@ class PolicyChangelog
   # @param [Hash] cookbook versions and source url data
   # @return [true, false]
   def reject_version_filter(data)
+    raise 'Data containing versions is nil' if data.nil?
     data['current_version'] == data['target_version'] ||
       data['current_version'].nil? ||
       data['target_version'].nil?
@@ -148,11 +153,11 @@ class PolicyChangelog
     lock_target = read_policyfile_lock(update_policyfile_lock)
     target = versions(lock_target['cookbook_locks'], 'target')
 
-    cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
+    updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
     sources = {}
-    cookbooks.each_key do |name|
+    updated_cookbooks.each_key do |name|
       sources[name] = get_source_url(lock_target['cookbook_locks'][name]['source_options'])
     end
-    cookbooks.deep_merge(sources).each { |name, data| print_commit_changelog(name, data) }
+    updated_cookbooks.deep_merge(sources).each { |name, data| print_commit_changelog(name, data) }
   end
 end

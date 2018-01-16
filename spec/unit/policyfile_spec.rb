@@ -5,39 +5,102 @@ require 'spec_helper'
 
 RSpec.describe PolicyChangelog do
   let(:pf_dir) do
-    File.join(File.dirname(__FILE__), '../data')
+    File.expand_path(File.join(File.dirname(__FILE__), '../data'))
+  end
+
+  let(:tmp_dir) do
+    File.join(pf_dir, 'tmp_dir')
   end
 
   let(:changelog) do
     PolicyChangelog.new('users', File.join(pf_dir, 'Policyfile.rb'))
   end
 
+  let(:lock_current) do
+    JSON.parse(File.read(File.join(pf_dir, 'Policyfile.lock.json')))
+  end
+
+  let(:lock_target) do
+    JSON.parse(File.read(File.join(tmp_dir, 'Policyfile.lock.json')))
+  end
+
+  let(:current_versions) do
+    {
+      'sudo' => { 'current_version' => '3.5.0' },
+      'users' => { 'current_version' => '4.0.0' }
+    }
+  end
+
+  let(:target_versions) do
+    {
+      'sudo' => { 'target_version' => '3.5.0' },
+      'users' => { 'target_version' => '5.3.1' }
+    }
+  end
+
+  let(:url) { 'https://supermarket.chef.io/api/v1/cookbooks/users' }
+
+  before(:each) do
+    stub_request(:get, 'https://supermarket.chef.io/api/v1/cookbooks/users').to_return(
+      status: 200,
+      body: '{
+        "name": "users",
+        "maintainer": "chef",
+        "description": "Creates users from a databag search",
+        "category": "Other",
+        "latest_version": "https://supermarket.chef.io/api/v1/cookbooks/users/versions/5.3.1",
+        "external_url": "https://github.com/chef-cookbooks/users",
+        "source_url": "https://github.com/chef-cookbooks/users",
+        "issues_url": "https://github.com/chef-cookbooks/users/issues",
+        "average_rating": null,
+        "created_at": "2010-07-27T05:34:01.000Z",
+        "updated_at": "2017-12-15T18:08:26.990Z",
+        "up_for_adoption": null,
+        "deprecated": false,
+        "versions": [],
+        "metrics": {}
+      }'
+    )
+  end
+
+  describe '#read_policyfile_lock' do
+    context 'when Policyfile.lock.json does not exist' do
+      it 'raises an exception' do
+        expect { changelog.read_policyfile_lock('/does/not/exist') }.to raise_error(RuntimeError)
+      end
+    end
+
+    context 'when Policyfile.lock.json is empty' do
+      it 'raises an exception' do
+        allow(File).to receive(:read).and_return('')
+        expect { changelog.read_policyfile_lock('') }.to raise_error(RuntimeError)
+      end
+    end
+  end
+
   describe '#versions' do
     context 'when type is current' do
       it 'returns correct current versions' do
-        locks = JSON.parse(File.read(File.join(pf_dir, 'pf_lock_current.json')))['cookbook_locks']
-        current_versions = {
-          'sudo' => { 'current_version' => '3.5.0' },
-          'users' => { 'current_version' => '4.0.0' }
-        }
-        expect(changelog.versions(locks, 'current')).to eq(current_versions)
+        expect(changelog.versions(lock_current['cookbook_locks'], 'current')).to eq(current_versions)
       end
     end
 
     context 'when type is target' do
       it 'returns correct target versions' do
-        locks = JSON.parse(File.read(File.join(pf_dir, 'pf_lock_target.json')))['cookbook_locks']
-        target_versions = {
-          'sudo' => { 'target_version' => '3.5.0' },
-          'users' => { 'target_version' => '5.3.1' }
-        }
-        expect(changelog.versions(locks, 'target')).to eq(target_versions)
+        expect(changelog.versions(lock_target['cookbook_locks'], 'target')).to eq(target_versions)
       end
     end
 
     context 'when type is not current nor target' do
-      it 'raises and exception' do
-        expect { changelog.versions(nil, 'toto') }.to raise_error(RuntimeError)
+      it 'raises an exception' do
+        expect { changelog.versions(lock_current['cookbook_locks'], 'toto') }.to raise_error(RuntimeError)
+      end
+    end
+
+    context 'when cookbooks locks are empty or nil' do
+      it 'raises an exception' do
+        expect { changelog.versions({}, 'current') }.to raise_error(RuntimeError)
+        expect { changelog.versions(nil, 'current') }.to raise_error(RuntimeError)
       end
     end
   end
@@ -66,36 +129,16 @@ RSpec.describe PolicyChangelog do
   end
 
   describe '#supermarket_source_url' do
-    let(:url) { 'https://supermarket.chef.io/api/v1/cookbooks/users' }
-
     context 'when response not empty' do
       it 'returns valid git repository url' do
-        supermarket_response = '{
-          "name": "users",
-          "maintainer": "chef",
-          "description": "Creates users from a databag search",
-          "category": "Other",
-          "latest_version": "https://supermarket.chef.io/api/v1/cookbooks/users/versions/5.3.1",
-          "external_url": "https://github.com/chef-cookbooks/users",
-          "source_url": "https://github.com/chef-cookbooks/users",
-          "issues_url": "https://github.com/chef-cookbooks/users/issues",
-          "average_rating": null,
-          "created_at": "2010-07-27T05:34:01.000Z",
-          "updated_at": "2017-12-15T18:08:26.990Z",
-          "up_for_adoption": null,
-          "deprecated": false,
-          "versions": [],
-          "metrics": {}
-        }'
-        stub_request(:get, url).to_return(status: 200, body: supermarket_response)
         expect(changelog.supermarket_source_url(url)).to match(%r{^(http|https):\/\/.+\.git$})
       end
     end
 
     context 'when cookbook does not exist' do
       it 'raises an error' do
-        supermarket_response = '{ "error_messages":["Resource does not exist."],"error_code":"NOT_FOUND" }'
-        stub_request(:get, url).to_return(status: 404, body: supermarket_response)
+        response = '{ "error_messages":["Resource does not exist."],"error_code":"NOT_FOUND" }'
+        stub_request(:get, url).to_return(status: 404, body: response)
         expect { changelog.supermarket_source_url(url) }.to raise_error(RestClient::NotFound)
       end
     end
@@ -139,6 +182,45 @@ RSpec.describe PolicyChangelog do
       it 'detects type for v-tag' do
         allow(repo).to receive_message_chain(:tags, :last, :name).and_return('v1.0.0')
         expect(changelog.tag_format(repo)).to eq('v')
+      end
+    end
+  end
+
+  describe '#reject_version_filter' do
+    context 'when current equal to target' do
+      it 'returns true' do
+        data = { 'current_version' => '1.0.0', 'target_version' => '1.0.0' }
+        expect(changelog.reject_version_filter(data)).to be true
+      end
+    end
+    context 'when current not equal to target' do
+      it 'returns false' do
+        data = { 'current_version' => '1.0.0', 'target_version' => '1.0.1' }
+        expect(changelog.reject_version_filter(data)).to be false
+      end
+    end
+    context 'when current or target do not exist' do
+      it 'returns true' do
+        expect(changelog.reject_version_filter('target_version' => '1.0.0')).to be true
+        expect(changelog.reject_version_filter('current_version' => '1.0.0')).to be true
+      end
+    end
+    context 'when data is nil' do
+      it 'raises an exception' do
+        expect { changelog.reject_version_filter(nil) }.to raise_error
+      end
+    end
+  end
+
+  describe '#generate_changelog' do
+    context 'when generating a changelog' do
+      it 'detects type for regular tag' do
+        allow(changelog).to receive(:update_policyfile_lock)
+          .and_return(tmp_dir)
+        allow(changelog).to receive(:git_changelog)
+          .and_return('e1b971a Add test commit message')
+
+        expect { changelog.generate_changelog }.not_to raise_error(RuntimeError)
       end
     end
   end
