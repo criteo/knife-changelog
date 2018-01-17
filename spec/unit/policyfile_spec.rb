@@ -160,12 +160,45 @@ RSpec.describe PolicyChangelog do
       it 'generates a changelog between two tags' do
         allow(changelog).to receive(:tag_format).and_return('v')
         allow(git).to receive(:clone).and_return(git_repo)
+        allow(changelog).to receive(:correct_tags)
+          .and_return(['v1.0.0', 'v1.0.1'])
         allow(git_repo).to receive_message_chain(:log, :between)
           .with('v1.0.0', 'v1.0.1')
           .and_return([git_commit])
 
         expect(changelog.git_changelog('https://url.example.git', '1.0.0', '1.0.1'))
           .to eq('e1b971a Add test commit message')
+      end
+    end
+  end
+
+  describe '#git_tag' do
+    let(:repo) { double('repo') }
+
+    context 'when tag valid' do
+      it 'returns correct git tag' do
+        allow(repo).to receive(:checkout).with('1.0.0').and_return(true)
+
+        expect(changelog.git_tag('1.0.0', repo)).to eq('1.0.0')
+      end
+    end
+
+    context 'when tag invalid and able to correct' do
+      it 'returns correct git tag' do
+        allow(repo).to receive(:checkout).with('1.0.0').and_raise(::Git::GitExecuteError)
+        allow(repo).to receive(:checkout).with('1.0').and_return(true)
+
+        expect(changelog.git_tag('1.0.0', repo)).to eq('1.0')
+      end
+    end
+
+    context 'when tags invalid and unable to correct' do
+      it 'raises exception' do
+        allow(repo).to receive(:checkout).with('1.0.0').and_raise(::Git::GitExecuteError)
+        allow(repo).to receive(:checkout).with('1.0').and_raise(::Git::GitExecuteError)
+
+        expect { changelog.git_tag('1.0.0', repo) }
+          .to raise_error(RuntimeError, 'Difference between Git and Supermarket tags')
       end
     end
   end

@@ -106,12 +106,43 @@ class PolicyChangelog
     dir = Dir.mktmpdir(TMP_PREFIX)
     repo = Git.clone(source_url, dir)
     if tag_format(repo) == 'v'
-      repo.log.between("v#{current}", "v#{target}")
+      c_tag, t_tag = correct_tags("v#{current}", "v#{target}", repo)
+      repo.log.between(c_tag, t_tag)
     else
-      repo.log.between(current, target)
+      c_tag, t_tag = correct_tags(current, target, repo)
+      repo.log.between(c_tag, t_tag)
     end.map do |commit|
       "#{commit.sha[0, 7]} #{commit.message.lines.first.strip}"
     end.join("\n")
+  end
+
+  # Used to make #git_changelog method more readable
+  #
+  # @param current [String] current cookbook version tag
+  # @param target [String] target cookbook version tag
+  # @param repo [Git::Base] Git repository object
+  # @return [true, false]
+  def correct_tags(current, target, repo)
+    [git_tag(current, repo), git_tag(target, repo)]
+  end
+
+  # Tries to convert a supermarket tag to a git tag
+  # if there is a difference in formatting between the two.
+  # This is issue is present for the 'java' cookbook.
+  # https://github.com/agileorbit-cookbooks/java/issues/450
+  #
+  # @param tag [String] version tag
+  # @param repo [Git::Base] Git repository object
+  # @return [String]
+  def git_tag(tag, repo)
+    return tag if repo.checkout(tag)
+  rescue ::Git::GitExecuteError
+    begin
+      rescue_tag = tag.chomp('.0') if tag[/\.0$/]
+      return rescue_tag if repo.checkout(rescue_tag)
+    rescue ::Git::GitExecuteError
+      raise 'Difference between Git and Supermarket tags'
+    end
   end
 
   # Detects the format of a Git tag - v1.0.0 or 1.0.0
