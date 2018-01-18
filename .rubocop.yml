@@ -27,7 +27,13 @@ Metrics/PerceivedComplexity:
 Metrics/CyclomaticComplexity:
   Max: 25
 
+Metrics/BlockLength:
+  Max: 20
+  Exclude:
+    - "spec/**/*"
+
 AllCops:
   Exclude:
   - bundle/**/*
+  - spec/data/Policyfile.rb
   TargetRubyVersion: 2.3

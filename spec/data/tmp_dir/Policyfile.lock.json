@@ -1,5 +1,5 @@
 {
-  "revision_id": "ca956e1f3b6bcbb1bd98e6f2aa58d22ae73191e4960f4039b3dea7225915205c",
+  "revision_id": "3ec29adf59408f8bac3408f9e284bae035b470eccda904544c4d1f541018289d",
   "name": "test_policy",
   "run_list": [
     "recipe[users::default]",
@@ -21,14 +21,14 @@
       }
     },
     "users": {
-      "version": "4.0.0",
-      "identifier": "5920ea9767ce2e71fb17b2107888abe89043ee53",
-      "dotted_decimal_identifier": "25087464861847086.32082751558547592.189015341133395",
-      "cache_key": "users-4.0.0-supermarket.chef.io",
-      "origin": "https://supermarket.chef.io:443/api/v1/cookbooks/users/versions/4.0.0/download",
+      "version": "5.3.1",
+      "identifier": "41c2bf84fe2476bbbe2dbe79362e6726a3ea47c7",
+      "dotted_decimal_identifier": "18510001311982710.52844924323313198.113415656458183",
+      "cache_key": "users-5.3.1-supermarket.chef.io",
+      "origin": "https://supermarket.chef.io:443/api/v1/cookbooks/users/versions/5.3.1/download",
       "source_options": {
-        "artifactserver": "https://supermarket.chef.io:443/api/v1/cookbooks/users/versions/4.0.0/download",
-        "version": "4.0.0"
+        "artifactserver": "https://supermarket.chef.io:443/api/v1/cookbooks/users/versions/5.3.1/download",
+        "version": "5.3.1"
       }
     }
   },
@@ -46,14 +46,14 @@
       ],
       [
         "users",
-        "= 4.0.0"
+        "= 5.3.1"
       ]
     ],
     "dependencies": {
       "sudo (3.5.0)": [
 
       ],
-      "users (4.0.0)": [
+      "users (5.3.1)": [
 
       ]
     }
