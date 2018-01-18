@@ -8,8 +8,8 @@ RSpec.describe PolicyChangelog do
     File.expand_path(File.join(File.dirname(__FILE__), '../data'))
   end
 
-  let(:tmp_dir) do
-    File.join(pf_dir, 'tmp_dir')
+  let(:target_dir) do
+    File.join(pf_dir, 'updated')
   end
 
   let(:changelog) do
@@ -21,7 +21,7 @@ RSpec.describe PolicyChangelog do
   end
 
   let(:lock_target) do
-    JSON.parse(File.read(File.join(tmp_dir, 'Policyfile.lock.json')))
+    JSON.parse(File.read(File.join(target_dir, 'Policyfile.lock.json')))
   end
 
   let(:current_versions) do
@@ -249,7 +249,7 @@ RSpec.describe PolicyChangelog do
     context 'when generating a changelog' do
       it 'detects type for regular tag' do
         allow(changelog).to receive(:update_policyfile_lock)
-          .and_return(tmp_dir)
+          .and_return(changelog.read_policyfile_lock(target_dir))
         allow(changelog).to receive(:git_changelog)
           .and_return('e1b971a Add test commit message')
 

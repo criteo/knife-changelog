@@ -25,19 +25,13 @@ class PolicyChangelog
   #
   # @return update_dir [String] tmp directory with updated Policyfile.lock
   def update_policyfile_lock
-    update_dir = Dir.mktmpdir
-    %w[Policyfile.rb Policyfile.lock.json].each do |file|
-      FileUtils.cp(
-        File.join(@policyfile_dir, file),
-        update_dir
-      )
-    end
+    backup_dir = Dir.mktmpdir
+    FileUtils.cp(File.join(@policyfile_dir, 'Policyfile.lock.json'), backup_dir)
     updater = ChefDK::Command::Update.new
-    updater.run([
-      File.join(update_dir, 'Policyfile.rb'),
-      @cookbooks_to_update
-    ].flatten)
-    update_dir
+    updater.run([@policyfile_path, @cookbooks_to_update].flatten)
+    updated_policyfile_lock = read_policyfile_lock(@policyfile_dir)
+    FileUtils.cp(File.join(backup_dir, 'Policyfile.lock.json'), @policyfile_dir)
+    updated_policyfile_lock
   end
 
   # Parses JSON in Policyfile.lock.
@@ -181,7 +175,7 @@ class PolicyChangelog
     lock_current = read_policyfile_lock(@policyfile_dir)
     current = versions(lock_current['cookbook_locks'], 'current')
 
-    lock_target = read_policyfile_lock(update_policyfile_lock)
+    lock_target = update_policyfile_lock
     target = versions(lock_target['cookbook_locks'], 'target')
 
     updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
