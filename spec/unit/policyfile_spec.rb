@@ -253,7 +253,11 @@ RSpec.describe PolicyChangelog do
         allow(changelog).to receive(:git_changelog)
           .and_return('e1b971a Add test commit message')
 
-        expect { changelog.generate_changelog }.not_to raise_error(RuntimeError)
+        output = "\nChangelog for users: 4.0.0->5.3.1\n" \
+          "==================================\n"         \
+          "e1b971a Add test commit message"
+
+        expect(changelog.generate_changelog).to eq(output)
       end
     end
   end

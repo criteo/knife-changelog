@@ -55,7 +55,7 @@ class Chef
       def run
         Log.info config
         if config[:policyfile] && File.exist?(config[:policyfile])
-          PolicyChangelog.new(@name_args, config[:policyfile]).generate_changelog
+          puts PolicyChangelog.new(@name_args, config[:policyfile]).generate_changelog
         else
           berksfile = Berkshelf::Berksfile.from_options({})
           puts KnifeChangelog::Changelog::Berksfile

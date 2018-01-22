@@ -147,15 +147,16 @@ class PolicyChangelog
     repo.tags.last.name[/^v/] ? 'v' : ''
   end
 
-  # Prints out commit changelog in a nicely formatted way
+  # Formats commit changelog to be more readable
   #
   # @param name [String] cookbook name
   # @param data [Hash] cookbook versions and source url data
-  def print_commit_changelog(name, data)
-    output = "\nChangelog for #{name}: #{data['current_version']}->#{data['target_version']}"
-    puts output
-    puts '=' * output.size
-    puts git_changelog(data['source_url'], data['current_version'], data['target_version'])
+  # @return [String] formatted changelog
+  def format_output(name, data)
+    output = ["\nChangelog for #{name}: #{data['current_version']}->#{data['target_version']}"]
+    output << '=' * output.first.size
+    output << git_changelog(data['source_url'], data['current_version'], data['target_version'])
+    output.join("\n")
   end
 
   # Filters out cookbooks which are not updated, are not used after update or
@@ -171,6 +172,8 @@ class PolicyChangelog
   end
 
   # Generates Policyfile changelog
+  #
+  # @return [String] formatted version changelog
   def generate_changelog
     lock_current = read_policyfile_lock(@policyfile_dir)
     current = versions(lock_current['cookbook_locks'], 'current')
@@ -183,6 +186,7 @@ class PolicyChangelog
     updated_cookbooks.each_key do |name|
       sources[name] = get_source_url(lock_target['cookbook_locks'][name]['source_options'])
     end
-    updated_cookbooks.deep_merge(sources).each { |name, data| print_commit_changelog(name, data) }
+    updated_cookbooks.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
   end
 end
+
