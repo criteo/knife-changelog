@@ -15,10 +15,11 @@ class PolicyChangelog
   #
   # @param cookbooks [Array<String>] cookbooks to update (@name_args)
   # @param policyfile [String] policyfile path
-  def initialize(cookbooks, policyfile)
+  def initialize(cookbooks, policyfile, with_dependencies)
     @cookbooks_to_update = cookbooks
     @policyfile_path = File.expand_path(policyfile)
     @policyfile_dir = File.dirname(@policyfile_path)
+    @with_dependencies = with_dependencies
   end
 
   # Updates the Policyfile.lock to get version differences.
@@ -182,11 +183,15 @@ class PolicyChangelog
     target = versions(lock_target['cookbook_locks'], 'target')
 
     updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
+    changelog_cookbooks = if @with_dependencies || @cookbooks_to_update.nil?
+                            updated_cookbooks
+                          else
+                            updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
+                          end
     sources = {}
-    updated_cookbooks.each_key do |name|
+    changelog_cookbooks.each_key do |name|
       sources[name] = get_source_url(lock_target['cookbook_locks'][name]['source_options'])
     end
-    updated_cookbooks.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
+    changelog_cookbooks.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
   end
 end
-

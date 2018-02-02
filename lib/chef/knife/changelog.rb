@@ -48,6 +48,12 @@ class Chef
              description: 'Link to policyfile, defaults to "Policyfile.rb"',
              default: 'Policyfile.rb'
 
+      option :with_dependencies,
+             long: '--with-dependencies',
+             description: 'Show changelog for cookbook in Policyfile with dependencies',
+             boolean: true,
+             default: false
+
       option :update,
              long: '--update',
              description: 'Update Berksfile'
@@ -55,7 +61,11 @@ class Chef
       def run
         Log.info config
         if config[:policyfile] && File.exist?(config[:policyfile])
-          puts PolicyChangelog.new(@name_args, config[:policyfile]).generate_changelog
+          puts PolicyChangelog.new(
+            @name_args,
+            config[:policyfile],
+            config[:with_dependencies]
+          ).generate_changelog
         else
           berksfile = Berkshelf::Berksfile.from_options({})
           puts KnifeChangelog::Changelog::Berksfile
