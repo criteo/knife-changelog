@@ -13,7 +13,7 @@ RSpec.describe PolicyChangelog do
   end
 
   let(:changelog) do
-    PolicyChangelog.new('users', File.join(pf_dir, 'Policyfile.rb'))
+    PolicyChangelog.new('users', File.join(pf_dir, 'Policyfile.rb'), false)
   end
 
   let(:lock_current) do
