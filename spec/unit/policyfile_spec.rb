@@ -40,6 +40,18 @@ RSpec.describe PolicyChangelog do
 
   let(:url) { 'https://supermarket.chef.io/api/v1/cookbooks/users' }
 
+  let(:tags) do
+    [
+      double(name: '1.0.0'),
+      double(name: '0.9.1'),
+      double(name: 'v1.0.5'),
+      double(name: 'v1.1.1'),
+      double(name: 'invalid'),
+      double(name: '5.2.1'),
+      double(name: 'v0.1.1')
+    ]
+  end
+
   before(:each) do
     stub_request(:get, 'https://supermarket.chef.io/api/v1/cookbooks/users').to_return(
       status: 200,
@@ -209,12 +221,24 @@ RSpec.describe PolicyChangelog do
 
       it 'detects type for regular tag' do
         allow(repo).to receive_message_chain(:tags, :last, :name).and_return('1.0.0')
+        allow(changelog).to receive(:sort_by_version).and_return(repo.tags)
         expect(changelog.tag_format(repo)).to eq('')
       end
 
       it 'detects type for v-tag' do
         allow(repo).to receive_message_chain(:tags, :last, :name).and_return('v1.0.0')
+        allow(changelog).to receive(:sort_by_version).and_return(repo.tags)
         expect(changelog.tag_format(repo)).to eq('v')
+      end
+    end
+  end
+
+  describe '#sort_by_version' do
+    context 'when sorting' do
+      it 'sorts' do
+        expect(changelog.sort_by_version(tags).map(&:name)).to eq(
+          %w[invalid v0.1.1 0.9.1 1.0.0 v1.0.5 v1.1.1 5.2.1]
+        )
       end
     end
   end
