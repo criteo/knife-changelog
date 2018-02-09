@@ -145,7 +145,22 @@ class PolicyChangelog
   # @param repo [Git::Base] Git repository object
   # @return [String] Git tag versioning type
   def tag_format(repo)
-    repo.tags.last.name[/^v/] ? 'v' : ''
+    sort_by_version(repo.tags).last.name[/^v/] ? 'v' : ''
+  end
+
+  # Sort tags by version and filter out invalid version tags
+  #
+  # @param tags [Array<Git::Object::Tag>] git tags
+  # @return [Array] git tags sorted by version
+  def sort_by_version(tags)
+    tags.sort_by do |t|
+      begin
+        Gem::Version.new(t.name.gsub(/^v/, ''))
+      rescue ArgumentError => e
+        # Skip tag if version is not valid (i.e. a String)
+        Gem::Version.new(nil) if e.to_s.include?('Malformed version number string')
+      end
+    end
   end
 
   # Formats commit changelog to be more readable
