@@ -136,7 +136,7 @@ class PolicyChangelog
       rescue_tag = tag.chomp('.0') if tag[/\.0$/]
       return rescue_tag if repo.checkout(rescue_tag)
     rescue ::Git::GitExecuteError
-      raise 'Difference between Git and Supermarket tags'
+      'Difference between Git and Supermarket tags'
     end
   end
 
