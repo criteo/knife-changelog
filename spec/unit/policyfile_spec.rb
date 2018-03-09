@@ -256,10 +256,14 @@ RSpec.describe PolicyChangelog do
         expect(changelog.reject_version_filter(data)).to be false
       end
     end
-    context 'when current or target do not exist' do
+    context 'when target does not exist' do
       it 'returns true' do
-        expect(changelog.reject_version_filter('target_version' => '1.0.0')).to be true
         expect(changelog.reject_version_filter('current_version' => '1.0.0')).to be true
+      end
+    end
+    context 'when current does not exist but target_does' do
+      it 'returns false' do
+        expect(changelog.reject_version_filter('target_version' => '1.0.0')).to be false
       end
     end
     context 'when data is nil' do

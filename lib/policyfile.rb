@@ -171,7 +171,12 @@ class PolicyChangelog
   def format_output(name, data)
     output = ["\nChangelog for #{name}: #{data['current_version']}->#{data['target_version']}"]
     output << '=' * output.first.size
-    output << git_changelog(data['source_url'], data['current_version'], data['target_version'])
+    output << if data['current_version']
+                git_changelog(data['source_url'], data['current_version'], data['target_version'])
+              else
+                'Cookbook was not in the Policyfile.lock.json'
+              end
+
     output.join("\n")
   end
 
@@ -182,9 +187,7 @@ class PolicyChangelog
   # @return [true, false]
   def reject_version_filter(data)
     raise 'Data containing versions is nil' if data.nil?
-    data['current_version'] == data['target_version'] ||
-      data['current_version'].nil? ||
-      data['target_version'].nil?
+    data['current_version'] == data['target_version'] || data['target_version'].nil?
   end
 
   # Generates Policyfile changelog
