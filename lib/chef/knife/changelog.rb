@@ -9,7 +9,6 @@ class Chef
       banner 'knife changelog COOKBOOK [COOKBOOK ...]'
 
       deps do
-        require 'knife/changelog/version'
         require 'knife/changelog/changelog'
         require 'knife/changelog/berksfile'
         require 'berkshelf'
