@@ -206,10 +206,18 @@ class PolicyChangelog
                           else
                             updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
                           end
-    sources = {}
-    changelog_cookbooks.each_key do |name|
-      sources[name] = get_source_url(lock_target['cookbook_locks'][name]['source_options'])
-    end
-    changelog_cookbooks.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
+    generate_changelog_from_versions(changelog_cookbooks)
+  end
+
+  # Generates Policyfile changelog
+  #
+  # @param cookbook_versions. Format is { 'NAME'  => { 'current_version' => 'VERSION', 'target_version' => 'VERSION' }
+  # @return [String] formatted version changelog
+  def generate_changelog_from_versions(cookbook_versions)
+    lock_current = read_policyfile_lock(@policyfile_dir)
+    sources = cookbook_versions.keys.map do |name|
+      [name, get_source_url(lock_current['cookbook_locks'][name]['source_options'])]
+    end.to_h
+    cookbook_versions.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
   end
 end

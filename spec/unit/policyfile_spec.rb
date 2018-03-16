@@ -273,6 +273,28 @@ RSpec.describe PolicyChangelog do
     end
   end
 
+  describe '#generate_changelog_from_versions' do
+    context 'when given origin/target versions' do
+      it 'generate the right changelog' do
+        expect(changelog).not_to receive(:update_policyfile_lock)
+
+        origin_and_target = {
+          'users' => { 'current_version' => '4.0.0', 'target_version' => '5.0.0' }
+        }
+
+        allow(changelog).to receive(:git_changelog)
+          .with(instance_of(String), '4.0.0', '5.0.0')
+          .and_return('e1b971a Add test commit message')
+
+        output = "\nChangelog for users: 4.0.0->5.0.0\n" \
+          "==================================\n"         \
+          "e1b971a Add test commit message"
+
+        expect(changelog.generate_changelog_from_versions(origin_and_target)).to eq(output)
+      end
+    end
+  end
+
   describe '#generate_changelog' do
     context 'when generating a changelog' do
       it 'detects type for regular tag' do
