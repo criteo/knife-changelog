@@ -2,7 +2,7 @@
 
 require 'knife/changelog/changelog'
 require 'knife/changelog/berksfile'
-require 'policyfile'
+require 'knife/changelog/policyfile'
 
 require 'webmock/rspec'
 

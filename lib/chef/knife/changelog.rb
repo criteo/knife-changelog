@@ -12,7 +12,7 @@ class Chef
         require 'knife/changelog/changelog'
         require 'knife/changelog/berksfile'
         require 'berkshelf'
-        require 'policyfile'
+        require 'knife/changelog/policyfile'
       end
 
       option :linkify,
