@@ -180,8 +180,7 @@ class PolicyChangelog
     output.join("\n")
   end
 
-  # Filters out cookbooks which are not updated, are not used after update or
-  # are newly added as dependencies during update
+  # Filters out cookbooks which are not updated, are not used after update
   #
   # @param [Hash] cookbook versions and source url data
   # @return [true, false]
@@ -215,9 +214,9 @@ class PolicyChangelog
   # @return [String] formatted version changelog
   def generate_changelog_from_versions(cookbook_versions)
     lock_current = read_policyfile_lock(@policyfile_dir)
-    sources = cookbook_versions.keys.map do |name|
-      [name, get_source_url(lock_current['cookbook_locks'][name]['source_options'])]
-    end.to_h
+    sources = cookbook_versions.map do |name, data|
+      [name, get_source_url(lock_current['cookbook_locks'][name]['source_options'])] if data['current_version']
+    end.compact.to_h
     cookbook_versions.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
   end
 end
