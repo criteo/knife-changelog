@@ -115,6 +115,15 @@ RSpec.describe PolicyChangelog do
         expect { changelog.versions(nil, 'current') }.to raise_error(RuntimeError)
       end
     end
+
+    context 'when cookbook is sourced by git' do
+      let(:lock_current) do
+        JSON.parse(File.read(File.join(pf_dir, 'Policyfile_git.lock.json')))
+      end
+      it 'returns git commit as version' do
+        expect(changelog.versions(lock_current['cookbook_locks'], 'target')['sudo']).to include('target_version' => '2bbebd0aea219047754a11eacc0763b92eb07113')
+      end
+    end
   end
 
   describe '#get_source_url' do

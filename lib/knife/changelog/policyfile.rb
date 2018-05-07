@@ -58,7 +58,11 @@ class PolicyChangelog
     raise 'Cookbook locks empty or nil' if locks.nil? or locks.empty?
     cookbooks = {}
     locks.each do |name, data|
-      cookbooks[name] = { "#{type}_version" => data['version'] }
+      cookbooks[name] = if data['source_options'].keys.include?('git')
+                          { "#{type}_version" => data['source_options']['revision'] }
+                        else
+                          { "#{type}_version" => data['version'] }
+                        end
     end
     cookbooks
   end
