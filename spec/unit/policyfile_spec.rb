@@ -179,10 +179,10 @@ RSpec.describe PolicyChangelog do
 
     context 'when given two tags' do
       it 'generates a changelog between two tags' do
-        allow(changelog).to receive(:tag_format).and_return('v')
         allow(git).to receive(:clone).and_return(git_repo)
+        allow(changelog).to receive(:git_ref).with('1.0.0', any_args).and_return('v1.0.0')
+        allow(changelog).to receive(:git_ref).with('1.0.1', any_args).and_return('v1.0.1')
         allow(changelog).to receive(:correct_tags)
-          .and_return(['v1.0.0', 'v1.0.1'])
         allow(git_repo).to receive_message_chain(:log, :between)
           .with('v1.0.0', 'v1.0.1')
           .and_return([git_commit])
@@ -193,51 +193,35 @@ RSpec.describe PolicyChangelog do
     end
   end
 
-  describe '#git_tag' do
+  describe '#git_ref' do
     let(:repo) { double('repo') }
 
     context 'when tag valid' do
       it 'returns correct git tag' do
+        allow(repo).to receive(:checkout).with('v1.0.0').and_raise(::Git::GitExecuteError)
         allow(repo).to receive(:checkout).with('1.0.0').and_return(true)
 
-        expect(changelog.git_tag('1.0.0', repo)).to eq('1.0.0')
+        expect(changelog.git_ref('1.0.0', repo)).to eq('1.0.0')
       end
     end
 
     context 'when tag invalid and able to correct' do
       it 'returns correct git tag' do
+        allow(repo).to receive(:checkout).with(/v1.0/).and_raise(::Git::GitExecuteError)
         allow(repo).to receive(:checkout).with('1.0.0').and_raise(::Git::GitExecuteError)
         allow(repo).to receive(:checkout).with('1.0').and_return(true)
 
-        expect(changelog.git_tag('1.0.0', repo)).to eq('1.0')
+        expect(changelog.git_ref('1.0.0', repo)).to eq('1.0')
       end
     end
 
     context 'when tags invalid and unable to correct' do
       it 'raises exception' do
-        allow(repo).to receive(:checkout).with('1.0.0').and_raise(::Git::GitExecuteError)
-        allow(repo).to receive(:checkout).with('1.0').and_raise(::Git::GitExecuteError)
+        allow(repo).to receive(:remote).and_return(double('remote', url: 'url.com'))
+        allow(repo).to receive(:checkout).with(any_args).and_raise(::Git::GitExecuteError)
 
-        expect { changelog.git_tag('1.0.0', repo) }
-          .to raise_error(RuntimeError, 'Difference between Git and Supermarket tags')
-      end
-    end
-  end
-
-  describe '#tag_format' do
-    context 'when it receives a tag' do
-      let(:repo) { Git::Base }
-
-      it 'detects type for regular tag' do
-        allow(repo).to receive_message_chain(:tags, :last, :name).and_return('1.0.0')
-        allow(changelog).to receive(:sort_by_version).and_return(repo.tags)
-        expect(changelog.tag_format(repo)).to eq('')
-      end
-
-      it 'detects type for v-tag' do
-        allow(repo).to receive_message_chain(:tags, :last, :name).and_return('v1.0.0')
-        allow(changelog).to receive(:sort_by_version).and_return(repo.tags)
-        expect(changelog.tag_format(repo)).to eq('v')
+        expect { changelog.git_ref('1.0.0', repo) }
+          .to raise_error(RuntimeError, /Impossible to find existing/)
       end
     end
   end

@@ -104,52 +104,31 @@ class PolicyChangelog
   def git_changelog(source_url, current, target)
     dir = Dir.mktmpdir(TMP_PREFIX)
     repo = Git.clone(source_url, dir)
-    if tag_format(repo) == 'v'
-      c_tag, t_tag = correct_tags("v#{current}", "v#{target}", repo)
-      repo.log.between(c_tag, t_tag)
-    else
-      c_tag, t_tag = correct_tags(current, target, repo)
-      repo.log.between(c_tag, t_tag)
-    end.map do |commit|
+    repo.log.between(git_ref(current, repo), git_ref(target, repo)).map do |commit|
       "#{commit.sha[0, 7]} #{commit.message.lines.first.strip}"
     end.join("\n")
   end
 
-  # Used to make #git_changelog method more readable
-  #
-  # @param current [String] current cookbook version tag
-  # @param target [String] target cookbook version tag
-  # @param repo [Git::Base] Git repository object
-  # @return [true, false]
-  def correct_tags(current, target, repo)
-    [git_tag(current, repo), git_tag(target, repo)]
-  end
-
-  # Tries to convert a supermarket tag to a git tag
+  # Tries to convert a supermarket tag to a git reference
   # if there is a difference in formatting between the two.
   # This is issue is present for the 'java' cookbook.
   # https://github.com/agileorbit-cookbooks/java/issues/450
   #
-  # @param tag [String] version tag
+  # @param ref [String] version reference
   # @param repo [Git::Base] Git repository object
   # @return [String]
-  def git_tag(tag, repo)
-    return tag if repo.checkout(tag)
-  rescue ::Git::GitExecuteError
-    begin
-      rescue_tag = tag.chomp('.0') if tag[/\.0$/]
-      return rescue_tag if repo.checkout(rescue_tag)
-    rescue ::Git::GitExecuteError
-      raise 'Difference between Git and Supermarket tags'
+  def git_ref(myref, repo)
+    possible_refs = ['v' + myref, myref]
+    possible_refs += possible_refs.map { |ref| ref.chomp('.0') } if myref[/\.0$/]
+    existing_ref = possible_refs.find do |ref|
+      begin
+        repo.checkout(ref)
+      rescue ::Git::GitExecuteError
+        false
+      end
     end
-  end
-
-  # Detects the format of a Git tag - v1.0.0 or 1.0.0
-  #
-  # @param repo [Git::Base] Git repository object
-  # @return [String] Git tag versioning type
-  def tag_format(repo)
-    sort_by_version(repo.tags).last.name[/^v/] ? 'v' : ''
+    raise "Impossible to find existing references to #{possible_refs} in #{repo.remote.url}" unless existing_ref
+    existing_ref
   end
 
   # Sort tags by version and filter out invalid version tags
