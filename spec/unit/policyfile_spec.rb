@@ -40,6 +40,8 @@ RSpec.describe PolicyChangelog do
 
   let(:url) { 'https://supermarket.chef.io/api/v1/cookbooks/users' }
 
+  let(:fake_update) { double('fake_update') }
+
   let(:tags) do
     [
       double(name: '1.0.0'),
@@ -309,6 +311,14 @@ RSpec.describe PolicyChangelog do
           'e1b971a Add test commit message'
 
         expect(changelog.generate_changelog).to eq(output)
+      end
+      it 'raises an exception' do
+        allow(ChefDK::Command::Update).to receive(:new).and_return(fake_update)
+        allow(fake_update).to receive(:run).and_return(1)
+        allow(changelog).to receive(:git_changelog)
+          .and_return('e1b971a Add test commit message')
+
+        expect { changelog.generate_changelog }.to raise_error(RuntimeError)
       end
     end
   end

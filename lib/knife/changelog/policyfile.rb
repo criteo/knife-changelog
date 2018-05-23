@@ -29,7 +29,7 @@ class PolicyChangelog
     backup_dir = Dir.mktmpdir
     FileUtils.cp(File.join(@policyfile_dir, 'Policyfile.lock.json'), backup_dir)
     updater = ChefDK::Command::Update.new
-    updater.run([@policyfile_path, @cookbooks_to_update].flatten)
+    raise "Error updating Policyfile lock #{@policyfile_path}" unless updater.run([@policyfile_path, @cookbooks_to_update].flatten).zero?
     updated_policyfile_lock = read_policyfile_lock(@policyfile_dir)
     FileUtils.cp(File.join(backup_dir, 'Policyfile.lock.json'), @policyfile_dir)
     updated_policyfile_lock
@@ -55,7 +55,7 @@ class PolicyChangelog
   # @return [Hash] cookbooks with their versions
   def versions(locks, type)
     raise 'Use "current" or "target" as type' unless %w[current target].include?(type)
-    raise 'Cookbook locks empty or nil' if locks.nil? or locks.empty?
+    raise 'Cookbook locks empty or nil' if locks.nil? || locks.empty?
     cookbooks = {}
     locks.each do |name, data|
       cookbooks[name] = if data['source_options'].keys.include?('git')
@@ -141,7 +141,7 @@ class PolicyChangelog
         Gem::Version.new(t.name.gsub(/^v/, ''))
       rescue ArgumentError => e
         # Skip tag if version is not valid (i.e. a String)
-        Gem::Version.new(nil) if e.to_s.include?('Malformed version number string')
+        Gem::Version.new(nil) if !e.message.nil? && e.message.include?('Malformed version number string')
       end
     end
   end
