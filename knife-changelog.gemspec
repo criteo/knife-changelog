@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = 'knife-changelog'
-  spec.version       = '1.2.4'
+  spec.version       = '1.2.5'
   spec.authors       = ['Gregoire Seux']
   spec.email         = ['kamaradclimber@gmail.com']
   spec.summary       = 'Facilitate access to cookbooks changelog'
