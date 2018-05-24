@@ -141,7 +141,8 @@ class PolicyChangelog
         Gem::Version.new(t.name.gsub(/^v/, ''))
       rescue ArgumentError => e
         # Skip tag if version is not valid (i.e. a String)
-        Gem::Version.new(nil) if !e.message.nil? && e.message.include?('Malformed version number string')
+        raise unless e.message && e.message.include?('Malformed version number string')
+        Gem::Version.new('0.0.0')
       end
     end
   end
