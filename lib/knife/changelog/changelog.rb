@@ -239,10 +239,15 @@ class KnifeChangelog
       c
     end
 
+    GERRIT_REGEXP = %r{^(.*)/[^/]+/[^/]+(?:\.git)$}
     def linkify(url, changelog)
-      changelog.map do |line|
-        line.gsub(/^([a-f0-9]+) (.*)$/, '\2 (%s/commit/\1) ' % [url.chomp('.git')])
-      end
+      format = case url
+               when /gitlab/, /github/
+                 "\\2 (#{url.chomp('.git')}/commit/\\1)"
+               when GERRIT_REGEXP
+                 "\\2 (#{::Regexp.last_match(1)}/#/q/\\1)"
+               end
+      format ? changelog.map { |line| line.sub(/^([a-f0-9]+) (.*)$/, format) } : changelog
     end
 
     def https_url(location)
