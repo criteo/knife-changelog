@@ -176,10 +176,20 @@ class PolicyChangelog
     data['current_version'] == data['target_version'] || data['target_version'].nil?
   end
 
+  # Search for cookbook downgrade and raise an error if any
+  def validate_downgrade!(data)
+    downgrade = data.select { |_, ck| ::Gem::Version.new(ck['target_version']) < ::Gem::Version.new(ck['current_version']) }
+
+    return if downgrade.empty?
+
+    details = downgrade.map { |name, data| "#{name} (#{data['current_version']} -> #{data['target_version']})" }
+    raise "Trying to downgrade following cookbooks: #{details.join(', ')}"
+  end
+
   # Generates Policyfile changelog
   #
   # @return [String] formatted version changelog
-  def generate_changelog
+  def generate_changelog(prevent_downgrade: false)
     lock_current = read_policyfile_lock(@policyfile_dir)
     current = versions(lock_current['cookbook_locks'], 'current')
 
@@ -192,6 +202,9 @@ class PolicyChangelog
                           else
                             updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
                           end
+
+    validate_downgrade!(updated_cookbooks) if prevent_downgrade
+
     generate_changelog_from_versions(changelog_cookbooks)
   end
 
