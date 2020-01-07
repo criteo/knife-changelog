@@ -42,6 +42,12 @@ class Chef
              long: '--submodules SUBMODULE[,SUBMODULE]',
              description: 'Submoduless to check for changes as well (comma separated)'
 
+      option :prevent_downgrade,
+             long: '--prevent-downgrade',
+             description: 'Fail if knife-changelog detect a cookbook downgrade',
+             boolean: true,
+             default: false
+
       option :policyfile,
              long: '--policyfile PATH',
              description: 'Link to policyfile, defaults to "Policyfile.rb"',
