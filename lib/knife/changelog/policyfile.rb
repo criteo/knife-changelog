@@ -11,6 +11,9 @@ require 'rest-client'
 
 class PolicyChangelog
   TMP_PREFIX = 'knife-changelog'
+  # Regex matching Chef cookbook version syntax
+  # See https://docs.chef.io/cookbook_versioning.html#syntax
+  VERSION_REGEX = /^[1-9]*[0-9](\.[0-9]+){1,2}$/
 
   # Initialzes Helper class
   #
@@ -178,7 +181,11 @@ class PolicyChangelog
 
   # Search for cookbook downgrade and raise an error if any
   def validate_downgrade!(data)
-    downgrade = data.select { |_, ck| ::Gem::Version.new(ck['target_version']) < ::Gem::Version.new(ck['current_version']) }
+    downgrade = data.select do |_, ck|
+      # Do not try to validate downgrade on non-sementic versions (e.g. git revision)
+      ck['target_version'] =~ VERSION_REGEX && ck['current_version'] =~ VERSION_REGEX &&
+        ::Gem::Version.new(ck['target_version']) < ::Gem::Version.new(ck['current_version'])
+    end
 
     return if downgrade.empty?
 
