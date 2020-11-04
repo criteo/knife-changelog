@@ -64,7 +64,7 @@ class Chef
              description: 'Update Berksfile'
 
       def run
-        Log.info config
+        Log.info config.to_s
         if config[:policyfile] && File.exist?(config[:policyfile])
           puts PolicyChangelog.new(
             @name_args,
