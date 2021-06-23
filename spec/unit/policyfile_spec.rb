@@ -214,7 +214,7 @@ RSpec.describe PolicyChangelog do
         allow(changelog).to receive(:git_ref).with('1.0.0', any_args).and_return('v1.0.0')
         allow(changelog).to receive(:git_ref).with('1.0.1', any_args).and_return('v1.0.1')
         allow(changelog).to receive(:correct_tags)
-        allow(git_repo).to receive_message_chain(:log, :between)
+        allow(git_repo).to receive_message_chain(:log, :path, :between)
           .with('v1.0.0', 'v1.0.1')
           .and_return([git_commit])
 
@@ -308,7 +308,7 @@ RSpec.describe PolicyChangelog do
         }
 
         allow(changelog).to receive(:git_changelog)
-          .with(instance_of(String), '4.0.0', '5.0.0')
+          .with(instance_of(String), '4.0.0', '5.0.0', 'users')
           .and_return('e1b971a Add test commit message')
 
         output = <<~COMMIT.chomp

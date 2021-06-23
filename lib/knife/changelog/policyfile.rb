@@ -107,12 +107,28 @@ class PolicyChangelog
   # @param current [String] current cookbook version tag
   # @param target [String] target cookbook version tag
   # @return [String] changelog between tags for one cookbook
-  def git_changelog(source_url, current, target)
+  def git_changelog(source_url, current, target, cookbook = nil)
     dir = Dir.mktmpdir(TMP_PREFIX)
     repo = Git.clone(source_url, dir)
-    repo.log.between(git_ref(current, repo), git_ref(target, repo)).map do |commit|
+    cookbook_path = cookbook ? git_cookbook_path(repo, cookbook) : '.'
+    repo.log.path(cookbook_path).between(git_ref(current, repo, cookbook), git_ref(target, repo, cookbook)).map do |commit|
       "#{commit.sha[0, 7]} #{commit.message.lines.first.strip}"
     end.join("\n")
+  end
+
+  # Tries to find the location of a specific cookbook in the given repo
+  #
+  # @param repo [Git::Base] Git repository object
+  # @param cookbook [String] name of the cookbook to search the location
+  # @return [String] reative location of the cookbook in the repo
+  def git_cookbook_path(repo, cookbook)
+    metadata_files = ['metadata.rb', '*/metadata.rb'].flat_map { |location| repo.ls_files(location).keys }
+    metadata_path = metadata_files.find do |path|
+      path = ::File.join(repo.dir.to_s, path)
+      ::Chef::Cookbook::Metadata.new.tap { |m| m.from_file(path) }.name == cookbook
+    end
+    raise "Impossible to find matching metadata for #{cookbook} in #{remo.remote.url}" unless metadata_path
+    ::File.dirname(metadata_path)
   end
 
   # Tries to convert a supermarket tag to a git reference
@@ -122,9 +138,11 @@ class PolicyChangelog
   #
   # @param ref [String] version reference
   # @param repo [Git::Base] Git repository object
+  # @param cookbook [String] name of the cookbook to ref against
   # @return [String]
-  def git_ref(myref, repo)
+  def git_ref(myref, repo, cookbook_name = nil)
     possible_refs = ['v' + myref, myref]
+    possible_refs += possible_refs.map { |ref| "#{cookbook_name}-#{ref}" } if cookbook_name
     possible_refs += possible_refs.map { |ref| ref.chomp('.0') } if myref[/\.0$/]
     existing_ref = possible_refs.find do |ref|
       begin
@@ -162,7 +180,7 @@ class PolicyChangelog
     output = ["\nChangelog for #{name}: #{data['current_version']}->#{data['target_version']}"]
     output << '=' * output.first.size
     output << if data['current_version']
-                git_changelog(data['source_url'], data['current_version'], data['target_version'])
+                git_changelog(data['source_url'], data['current_version'], data['target_version'], name)
               else
                 'Cookbook was not in the Policyfile.lock.json'
               end
