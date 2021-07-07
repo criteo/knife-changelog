@@ -238,11 +238,16 @@ RSpec.describe PolicyChangelog do
 
     context 'when tag invalid and able to correct' do
       it 'returns correct git tag' do
-        allow(repo).to receive(:checkout).with(/v1.0/).and_raise(::Git::GitExecuteError)
         allow(repo).to receive(:checkout).with('1.0.0').and_raise(::Git::GitExecuteError)
-        allow(repo).to receive(:checkout).with('1.0').and_return(true)
 
-        expect(changelog.git_ref('1.0.0', repo)).to eq('1.0')
+        tags = %w[v1.0.0 1.0 v1.0 cookbook_name-1.0.0 cookbook_name-1.0 cookbook_name-v1.0.0 cookbook_name-v1.0]
+        tags.each do |valid_result|
+          allow(repo).to receive(:checkout).with(valid_result).and_return(true)
+          tags.reject { |v| v == valid_result }.each do |invalid_result|
+            allow(repo).to receive(:checkout).with(invalid_result).and_raise(::Git::GitExecuteError)
+          end
+          expect(changelog.git_ref('1.0.0', repo, 'cookbook_name')).to eq valid_result
+        end
       end
     end
 
