@@ -127,7 +127,7 @@ class PolicyChangelog
       path = ::File.join(repo.dir.to_s, path)
       ::Chef::Cookbook::Metadata.new.tap { |m| m.from_file(path) }.name == cookbook
     end
-    raise "Impossible to find matching metadata for #{cookbook} in #{remo.remote.url}" unless metadata_path
+    raise "Impossible to find matching metadata for #{cookbook} in #{repo.remote.url}" unless metadata_path
     ::File.dirname(metadata_path)
   end
 
