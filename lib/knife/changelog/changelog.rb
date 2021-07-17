@@ -18,7 +18,7 @@ class KnifeChangelog
       end
     end
 
-    def initialize(config)
+    def initialize(config = {})
       @tmp_prefix = 'knife-changelog'
       @config   = config
       @tmp_dirs = []
