@@ -177,7 +177,7 @@ class KnifeChangelog
       if !url.end_with?('.git')
         url = "#{url}.git"
       end
-      location = Location.new(url, guess_version_for(name), 'master')
+      location = Location.new(url, guess_version_for(name), 'HEAD')
       handle_git(name, location)
     end
 
@@ -200,7 +200,7 @@ class KnifeChangelog
       subm_revision.error!
       revision = subm_revision.stdout.strip.split(' ').first
       revision.gsub!(/^\+/, '')
-      loc = Location.new(url, revision, 'master')
+      loc = Location.new(url, revision, 'HEAD')
       handle_git(name, loc)
     end
 
