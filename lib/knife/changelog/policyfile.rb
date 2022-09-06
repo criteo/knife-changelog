@@ -2,8 +2,8 @@
 
 require 'chef'
 require 'chef/knife'
-require 'chef-dk/command/update'
-require 'chef-dk/command/install'
+require 'chef-cli/command/update'
+require 'chef-cli/command/install'
 require 'deep_merge'
 require 'git'
 require 'json'
@@ -32,9 +32,9 @@ class PolicyChangelog
   def update_policyfile_lock
     backup_dir = Dir.mktmpdir
     FileUtils.cp(File.join(@policyfile_dir, 'Policyfile.lock.json'), backup_dir)
-    installer = ChefDK::Command::Install.new
+    installer = ChefCLI::Command::Install.new
     raise "Cannot install Policyfile lock #{@policyfile_path}" unless installer.run([@policyfile_relative_path]).zero?
-    updater = ChefDK::Command::Update.new
+    updater = ChefCLI::Command::Update.new
     raise "Error updating Policyfile lock #{@policyfile_path}" unless updater.run([@policyfile_path, @cookbooks_to_update].flatten).zero?
     updated_policyfile_lock = read_policyfile_lock(@policyfile_dir)
     FileUtils.cp(File.join(backup_dir, 'Policyfile.lock.json'), @policyfile_dir)
