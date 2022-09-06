@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency  'berkshelf'
   spec.add_dependency  'chef'
-  spec.add_dependency  'chef-dk'
+  spec.add_dependency  'chef-cli'
   spec.add_dependency  'deep_merge'
   spec.add_dependency  'git'
   spec.add_dependency  'mixlib-shellout'

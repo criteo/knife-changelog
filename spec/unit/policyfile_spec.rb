@@ -347,7 +347,7 @@ RSpec.describe PolicyChangelog do
         expect(changelog.generate_changelog).to eq(output)
       end
       it 'raises an exception' do
-        allow(ChefDK::Command::Update).to receive(:new).and_return(fake_update)
+        allow(ChefCLI::Command::Update).to receive(:new).and_return(fake_update)
         allow(fake_update).to receive(:run).and_return(1)
         allow(changelog).to receive(:git_changelog)
           .and_return('e1b971a Add test commit message')
