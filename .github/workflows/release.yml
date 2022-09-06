@@ -10,9 +10,9 @@ jobs:
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: 2.7
-    - run: |
-        install -D -m 600 <(echo -e "---\n:rubygems_api_key: ${RUBYGEMS_API_KEY}") $HOME/.gem/credentials
-        gem build *.gemspec
-        gem push *.gem
+    - name: Build
+      run: gem build *.gemspec
+    - name: Push on Rubygems
+      run: gem push *.gem
       env:
-        RUBYGEMS_API_KEY: ${{secrets.RUBYGEMS_API_KEY}}
+        GEM_HOST_API_KEY: ${{secrets.RUBYGEMS_API_KEY}}
