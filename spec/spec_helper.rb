@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'knife/changelog/changelog'
-require 'knife/changelog/berksfile'
 require 'knife/changelog/policyfile'
 
 require 'webmock/rspec'

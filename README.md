@@ -15,7 +15,7 @@ Options:
 - generate changelogs for some supermarket hosted cookbooks
 - generate changelogs for all git located cookbooks
 
-This plugin works in policyfile style repositories or classical repositories with a Berksfile
+This plugin works in policyfile style repositories
 
 ## Todos
 

@@ -5,13 +5,15 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = 'knife-changelog'
-  spec.version       = '2.0.0'
+  spec.version       = '3.0.0'
   spec.authors       = ['Gregoire Seux']
   spec.email         = ['kamaradclimber@gmail.com']
   spec.summary       = 'Facilitate access to cookbooks changelog'
   spec.description   = ''
   spec.homepage      = 'https://github.com/kamaradclimber/knife-changelog'
   spec.license       = 'MIT'
+
+  spec.required_ruby_version = '>= 2.7'
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
@@ -24,7 +26,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'webmock'
 
-  spec.add_dependency  'berkshelf'
   spec.add_dependency  'chef'
   spec.add_dependency  'chef-cli'
   spec.add_dependency  'deep_merge'

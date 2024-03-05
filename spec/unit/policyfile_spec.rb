@@ -92,35 +92,6 @@ RSpec.describe PolicyChangelog do
     end
   end
 
-  describe '#linkify' do
-    subject { KnifeChangelog::Changelog.new(config) }
-    let(:config) { double('config') }
-    let(:changelog) do
-      ['9363423 Leverage criteo-flavor 3.11 to benefit from labels']
-    end
-    context 'when url is gitlab style' do
-      let(:url) { 'https://gitlab.com/chef-cookbooks/criteo-rackguru.git' }
-
-      it 'creates a gitlab style link' do
-        expect(subject.linkify(url, changelog).first).to match(%r{https://gitlab.com/chef-cookbooks/criteo-rackguru/commit/9363423})
-      end
-    end
-
-    context 'when url is github style' do
-      let(:url) { 'https://github.com/chef-cookbooks/criteo-rackguru.git' }
-      it 'creates a github style link' do
-        expect(subject.linkify(url, changelog).first).to match(%r{https://github.com/chef-cookbooks/criteo-rackguru/commit/9363423})
-      end
-    end
-
-    context 'when url has no known style' do
-      let(:url) { 'https://review.mycompany.com/chef-cookbooks/criteo-rackguru.git' }
-      it 'creates a gerrit style link' do
-        expect(subject.linkify(url, changelog).first).to match(%r{https://review.mycompany.com/#/q/9363423})
-      end
-    end
-  end
-
   describe '#versions' do
     context 'when type is current' do
       it 'returns correct current versions' do
