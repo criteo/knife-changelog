@@ -9,38 +9,8 @@ class Chef
       banner 'knife changelog COOKBOOK [COOKBOOK ...]'
 
       deps do
-        require 'knife/changelog/changelog'
-        require 'knife/changelog/berksfile'
-        require 'berkshelf'
         require 'knife/changelog/policyfile'
       end
-
-      option :linkify,
-             short: '-l',
-             long: '--linkify',
-             description: 'add markdown links where relevant',
-             boolean: true
-
-      option :markdown,
-             short: '-m',
-             long: '--markdown',
-             description: 'use markdown syntax',
-             boolean: true
-
-      option :ignore_changelog_file,
-             long: '--ignore-changelog-file',
-             description: 'Ignore changelog file presence, use git history instead',
-             boolean: true
-
-      option :allow_update_all,
-             long: '--allow-update-all',
-             description: 'If no cookbook given, check all Berksfile',
-             boolean: true,
-             default: true
-
-      option :submodules,
-             long: '--submodules SUBMODULE[,SUBMODULE]',
-             description: 'Submoduless to check for changes as well (comma separated)'
 
       option :prevent_downgrade,
              long: '--prevent-downgrade',
@@ -59,24 +29,13 @@ class Chef
              boolean: true,
              default: false
 
-      option :update,
-             long: '--update',
-             description: 'Update Berksfile'
-
       def run
         Log.info config.to_s
-        if config[:policyfile] && File.exist?(config[:policyfile])
-          puts PolicyChangelog.new(
-            @name_args,
-            config[:policyfile],
-            config[:with_dependencies]
-          ).generate_changelog
-        else
-          berksfile = Berkshelf::Berksfile.from_options({})
-          puts KnifeChangelog::Changelog::Berksfile
-            .new(berksfile, config)
-            .run(@name_args)
-        end
+        puts PolicyChangelog.new(
+          @name_args,
+          config[:policyfile],
+          config[:with_dependencies]
+        ).generate_changelog(config[:prevent_downgrade])
       end
     end
   end
