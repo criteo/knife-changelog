@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/kamaradclimber/knife-changelog'
   spec.license       = 'MIT'
 
-  spec.required_ruby_version = '>= 2.7'
+  spec.required_ruby_version = '>= 3.0'
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
@@ -30,6 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency  'chef-cli'
   spec.add_dependency  'deep_merge'
   spec.add_dependency  'git'
+  spec.add_dependency  'knife'
   spec.add_dependency  'mixlib-shellout'
   spec.add_dependency  'rest-client'
 end
