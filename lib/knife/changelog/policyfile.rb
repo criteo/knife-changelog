@@ -147,7 +147,7 @@ class PolicyChangelog
     existing_ref = possible_refs.find do |ref|
       begin
         repo.checkout(ref)
-      rescue ::Git::GitExecuteError
+      rescue ::Git::Error
         false
       end
     end

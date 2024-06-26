@@ -2,6 +2,7 @@
 
 require 'knife/changelog/policyfile'
 
+require 'rexml/document'
 require 'webmock/rspec'
 
 WebMock.disable_net_connect!(allow_localhost: true)
