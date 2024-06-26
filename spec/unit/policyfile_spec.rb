@@ -268,7 +268,7 @@ RSpec.describe PolicyChangelog do
     end
     context 'when data is nil' do
       it 'raises an exception' do
-        expect { changelog.reject_version_filter(nil) }.to raise_error
+        expect { changelog.reject_version_filter(nil) }.to raise_error(RuntimeError)
       end
     end
   end
