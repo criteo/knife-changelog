@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'chef'
 require 'chef/knife'
 require 'chef-cli/command/update'
 require 'chef-cli/command/install'
