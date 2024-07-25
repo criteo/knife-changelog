@@ -26,7 +26,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'webmock'
 
-  spec.add_dependency  'chef'
   spec.add_dependency  'chef-cli'
   spec.add_dependency  'deep_merge'
   spec.add_dependency  'git'
