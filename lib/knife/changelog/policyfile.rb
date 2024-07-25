@@ -28,15 +28,15 @@ class PolicyChangelog
   # Updates the Policyfile.lock to get version differences.
   #
   # @return update_dir [String] tmp directory with updated Policyfile.lock
-  def update_policyfile_lock
-    backup_dir = Dir.mktmpdir
-    FileUtils.cp(File.join(@policyfile_dir, 'Policyfile.lock.json'), backup_dir)
+  def update_policyfile_lock(work_dir: nil)
+    work_dir ||= ::Dir.mktmpdir(TMP_PREFIX)
+    FileUtils.cp(File.join(@policyfile_dir, 'Policyfile.lock.json'), work_dir)
     installer = ChefCLI::Command::Install.new
     raise "Cannot install Policyfile lock #{@policyfile_path}" unless installer.run([@policyfile_relative_path]).zero?
     updater = ChefCLI::Command::Update.new
     raise "Error updating Policyfile lock #{@policyfile_path}" unless updater.run([@policyfile_path, @cookbooks_to_update].flatten).zero?
     updated_policyfile_lock = read_policyfile_lock(@policyfile_dir)
-    FileUtils.cp(File.join(backup_dir, 'Policyfile.lock.json'), @policyfile_dir)
+    FileUtils.cp(File.join(work_dir, 'Policyfile.lock.json'), @policyfile_dir)
     updated_policyfile_lock
   end
 
@@ -106,9 +106,9 @@ class PolicyChangelog
   # @param current [String] current cookbook version tag
   # @param target [String] target cookbook version tag
   # @return [String] changelog between tags for one cookbook
-  def git_changelog(source_url, current, target, cookbook = nil)
-    dir = Dir.mktmpdir(TMP_PREFIX)
-    repo = Git.clone(source_url, dir)
+  def git_changelog(source_url, current, target, cookbook = nil, work_dir: nil)
+    repo_dir = ::File.join(work_dir || Dir.mktmpdir(TMP_PREFIX), "git-#{source_url.gsub(/[\/:]+/, '-')}")
+    repo = ::Dir.exist?(repo_dir) ? ::Git.open(repo_dir) : ::Git.clone(source_url, repo_dir)
     cookbook_path = cookbook ? git_cookbook_path(repo, cookbook) : '.'
     repo.log.path(cookbook_path).between(git_ref(current, repo, cookbook), git_ref(target, repo, cookbook)).map do |commit|
       "#{commit.sha[0, 7]} #{commit.message.lines.first.strip}"
@@ -175,11 +175,11 @@ class PolicyChangelog
   # @param name [String] cookbook name
   # @param data [Hash] cookbook versions and source url data
   # @return [String] formatted changelog
-  def format_output(name, data)
+  def format_output(name, data, work_dir: nil)
     output = ["\nChangelog for #{name}: #{data['current_version']}->#{data['target_version']}"]
     output << '=' * output.first.size
     output << if data['current_version']
-                git_changelog(data['source_url'], data['current_version'], data['target_version'], name)
+                git_changelog(data['source_url'], data['current_version'], data['target_version'], name, work_dir: work_dir)
               else
                 'Cookbook was not in the Policyfile.lock.json'
               end
@@ -214,33 +214,31 @@ class PolicyChangelog
   #
   # @return [String] formatted version changelog
   def generate_changelog(prevent_downgrade: false)
-    lock_current = read_policyfile_lock(@policyfile_dir)
-    current = versions(lock_current['cookbook_locks'], 'current')
-
-    lock_target = update_policyfile_lock
-    target = versions(lock_target['cookbook_locks'], 'target')
-
-    updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
-    changelog_cookbooks = if @with_dependencies || @cookbooks_to_update.nil?
-                            updated_cookbooks
-                          else
-                            updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
-                          end
-
-    validate_downgrade!(updated_cookbooks) if prevent_downgrade
-
-    generate_changelog_from_versions(changelog_cookbooks)
+    ::Dir.mktmpdir(TMP_PREFIX) do |dir|
+      lock_current = read_policyfile_lock(@policyfile_dir)
+      current = versions(lock_current['cookbook_locks'], 'current')
+      lock_target = update_policyfile_lock(work_dir: dir)
+      target = versions(lock_target['cookbook_locks'], 'target')
+      updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
+      changelog_cookbooks = if @with_dependencies || @cookbooks_to_update.nil?
+                              updated_cookbooks
+                            else
+                              updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
+                            end
+      validate_downgrade!(updated_cookbooks) if prevent_downgrade
+      generate_changelog_from_versions(changelog_cookbooks, work_dir: dir)
+    end
   end
 
   # Generates Policyfile changelog
   #
   # @param cookbook_versions. Format is { 'NAME'  => { 'current_version' => 'VERSION', 'target_version' => 'VERSION' }
   # @return [String] formatted version changelog
-  def generate_changelog_from_versions(cookbook_versions)
+  def generate_changelog_from_versions(cookbook_versions, work_dir: nil)
     lock_current = read_policyfile_lock(@policyfile_dir)
     sources = cookbook_versions.map do |name, data|
       [name, get_source_url(lock_current['cookbook_locks'][name]['source_options'])] if data['current_version']
     end.compact.to_h
-    cookbook_versions.deep_merge(sources).map { |name, data| format_output(name, data) }.join("\n")
+    cookbook_versions.deep_merge(sources).map { |name, data| format_output(name, data, work_dir: work_dir) }.join("\n")
   end
 end
