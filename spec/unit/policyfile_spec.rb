@@ -284,7 +284,7 @@ RSpec.describe PolicyChangelog do
         }
 
         allow(changelog).to receive(:git_changelog)
-          .with(instance_of(String), '4.0.0', '5.0.0', 'users')
+          .with(instance_of(String), '4.0.0', '5.0.0', 'users', work_dir: nil)
           .and_return('e1b971a Add test commit message')
 
         output = <<~COMMIT.chomp
