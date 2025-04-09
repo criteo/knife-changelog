@@ -35,7 +35,7 @@ class Chef
           @name_args,
           config[:policyfile],
           config[:with_dependencies]
-        ).generate_changelog(config[:prevent_downgrade])
+        ).generate_changelog(prevent_downgrade: config[:prevent_downgrade])
       end
     end
   end
