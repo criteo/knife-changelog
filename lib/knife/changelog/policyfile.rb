@@ -213,11 +213,12 @@ class PolicyChangelog
   # Generates Policyfile changelog
   #
   # @return [String] formatted version changelog
-  def generate_changelog(prevent_downgrade: false)
-    ::Dir.mktmpdir(TMP_PREFIX) do |dir|
+  def generate_changelog(prevent_downgrade: false, work_dir: nil, clean_work_dir: true)
+    work_dir ||= ::Dir.mktmpdir(TMP_PREFIX)
+    begin
       lock_current = read_policyfile_lock(@policyfile_dir)
       current = versions(lock_current['cookbook_locks'], 'current')
-      lock_target = update_policyfile_lock(work_dir: dir)
+      lock_target = update_policyfile_lock(work_dir: work_dir)
       target = versions(lock_target['cookbook_locks'], 'target')
       updated_cookbooks = current.deep_merge(target).reject { |_name, data| reject_version_filter(data) }
       changelog_cookbooks = if @with_dependencies || @cookbooks_to_update.nil?
@@ -226,7 +227,9 @@ class PolicyChangelog
                               updated_cookbooks.select { |name, _data| @cookbooks_to_update.include?(name) }
                             end
       validate_downgrade!(updated_cookbooks) if prevent_downgrade
-      generate_changelog_from_versions(changelog_cookbooks, work_dir: dir)
+      generate_changelog_from_versions(changelog_cookbooks, work_dir: work_dir)
+    ensure
+      FileUtils.remove_entry work_dir if clean_work_dir
     end
   end
 
