@@ -29,13 +29,22 @@ class Chef
              boolean: true,
              default: false
 
+      option :workdir,
+            long: '--workdir PATH',
+            description: 'Path used to fetch cookbook sources & render changelog'
+
+      option :cleanup,
+            long: '--cleanup',
+            boolean: true,
+            description: 'Remove cookbook sources after changelog generation'
+
       def run
         Log.info config.to_s
         puts PolicyChangelog.new(
           @name_args,
           config[:policyfile],
           config[:with_dependencies]
-        ).generate_changelog(prevent_downgrade: config[:prevent_downgrade])
+        ).generate_changelog(prevent_downgrade: config[:prevent_downgrade], work_dir: config[:workdir], clean_work_dir: config[:cleanup])
       end
     end
   end
